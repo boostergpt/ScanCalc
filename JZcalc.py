@@ -10,7 +10,7 @@ import os
 
 # OpenAI API Configuration
 # IMPORTANT: Replace this with your actual API key when running the app
-OPENAI_API_KEY = "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"  # You'll replace this when running
+OPENAI_API_KEY = "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"  # You'll replace this when running
 
 # Set page config
 st.set_page_config(
@@ -104,20 +104,20 @@ if 'calculated_scans' not in st.session_state:
 if 'user_question' not in st.session_state:
     st.session_state.user_question = ""
 
-# Add logo and title to the main area with better centering
-st.markdown('<div class="centered-logo">', unsafe_allow_html=True)
+# Add logo and title with better alignment
 try:
-    # Check if the image file exists in the current directory
-    if os.path.exists('image.png'):
-        image = Image.open('image.png')
-        st.image(image, width=500)  # Adjusted width
-    else:
-        st.warning("Logo 'image.png' not found. Make sure it's in the same directory as this app.")
+    st.markdown("""
+    <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+        <div style="text-align: center;">
+            <img src="data:image/png;base64,{}" width="500">
+            <h1 style="margin-top: 10px;">Pricing & Margin Calculator</h1>
+        </div>
+    </div>
+    """.format(base64.b64encode(open('image.png', 'rb').read()).decode()), unsafe_allow_html=True)
 except Exception as e:
     st.error(f"Error loading image: {str(e)}")
-
-st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+    st.warning("Logo 'image.png' not found. Make sure it's in the same directory as this app.")
+    st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_html=True)
 
 # Create sidebar for inputs
 with st.sidebar:
@@ -267,37 +267,37 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# EDLP Margin %
-st.markdown(f"""
-<div class='edlp-metric'>
-    <div class='edlp-label'>EDLP Margin %</div>
-    <div class='edlp-value'>{edlp_margins["gm_percent"]:.1f}%</div>
+# EDLP Metrics section at the top as a single horizontal row
+st.markdown("""
+<div style="display: flex; flex-direction: row; background-color: #e9ecef; border-radius: 10px; padding: 15px; margin-bottom: 25px;">
+    <div style="flex: 1; text-align: center; margin: 0 10px;">
+        <div style="font-size: 0.9rem; color: #666;">EDLP Price</div>
+        <div style="font-size: 1.2rem; font-weight: bold;">${:.2f}</div>
+    </div>
+    <div style="flex: 1; text-align: center; margin: 0 10px;">
+        <div style="font-size: 0.9rem; color: #666;">EDLP Margin %</div>
+        <div style="font-size: 1.2rem; font-weight: bold;">{:.1f}%</div>
+    </div>
+    <div style="flex: 1; text-align: center; margin: 0 10px;">
+        <div style="font-size: 0.9rem; color: #666;">EDLP Margin $</div>
+        <div style="font-size: 1.2rem; font-weight: bold;">${:.2f}</div>
+    </div>
+    <div style="flex: 1; text-align: center; margin: 0 10px;">
+        <div style="font-size: 0.9rem; color: #666;">With Coupon %</div>
+        <div style="font-size: 1.2rem; font-weight: bold;">{:.1f}%</div>
+    </div>
+    <div style="flex: 1; text-align: center; margin: 0 10px;">
+        <div style="font-size: 0.9rem; color: #666;">With Coupon $</div>
+        <div style="font-size: 1.2rem; font-weight: bold;">${:.2f}</div>
+    </div>
 </div>
-""", unsafe_allow_html=True)
-
-# EDLP Margin $
-st.markdown(f"""
-<div class='edlp-metric'>
-    <div class='edlp-label'>EDLP Margin $</div>
-    <div class='edlp-value'>${edlp_margins["gm_dollars"]:.2f}</div>
-</div>
-""", unsafe_allow_html=True)
-
-# EDLP With Coupon %
-st.markdown(f"""
-<div class='edlp-metric'>
-    <div class='edlp-label'>With Coupon %</div>
-    <div class='edlp-value'>{edlp_margins["gm_coupon_percent"]:.1f}%</div>
-</div>
-""", unsafe_allow_html=True)
-
-# EDLP With Coupon $
-st.markdown(f"""
-<div class='edlp-metric'>
-    <div class='edlp-label'>With Coupon $</div>
-    <div class='edlp-value'>${edlp_margins["gm_coupon_dollars"]:.2f}</div>
-</div>
-""", unsafe_allow_html=True)
+""".format(
+    edlp_price, 
+    edlp_margins["gm_percent"],
+    edlp_margins["gm_dollars"],
+    edlp_margins["gm_coupon_percent"],
+    edlp_margins["gm_coupon_dollars"]
+), unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
