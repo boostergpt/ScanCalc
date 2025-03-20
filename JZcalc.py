@@ -90,19 +90,49 @@ st.markdown("""
     button[data-baseweb="tab"] {
         font-size: 1.3rem !important;
     }
+    .pricing-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+    }
+    .pricing-table th {
+        background-color: #f0f2f6;
+        padding: 12px;
+        text-align: center;
+        font-weight: bold;
+        border: 1px solid #ddd;
+    }
+    .pricing-table td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: center;
+    }
+    .pricing-table td:first-child {
+        text-align: left;
+    }
+    .pricing-table tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+    .pricing-table tr:hover {
+        background-color: #e9ecef;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state for storing historical data
+# Initialize session state for storing historical data and scan scenarios
 if 'historical_data' not in st.session_state:
     st.session_state.historical_data = pd.DataFrame()
+    
+if 'scan_scenarios' not in st.session_state:
+    st.session_state.scan_scenarios = pd.DataFrame()
 
 # Add logo and title to the main area
 try:
     image = Image.open('image.png')
     col1, col2, col3 = st.columns([1, 3, 1])
     with col2:
-        st.image(image, width=600, use_column_width=True)
+        st.image(image, width=600, use_container_width=True)
 except:
     st.warning("Logo 'image.png' not found. Please add it to the same directory as the app.")
 
@@ -226,35 +256,6 @@ pricing_data = {
                      f"${ad_base_margins['gm_coupon_dollars']:.2f}", f"${ad_deep_margins['gm_coupon_dollars']:.2f}"]
 }
 
-# Display the table with custom styling
-st.markdown("""
-<style>
-.pricing-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 1.2rem;
-    margin-bottom: 20px;
-}
-.pricing-table th {
-    background-color: #f0f2f6;
-    padding: 12px;
-    text-align: left;
-    font-weight: bold;
-    border: 1px solid #ddd;
-}
-.pricing-table td {
-    padding: 12px;
-    border: 1px solid #ddd;
-}
-.pricing-table tr:nth-child(even) {
-    background-color: #f8f9fa;
-}
-.pricing-table tr:hover {
-    background-color: #e9ecef;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # Create the HTML table
 table_html = "<table class='pricing-table'><thead><tr>"
 # Add headers
@@ -273,8 +274,53 @@ table_html += "</tbody></table>"
 # Display the table
 st.markdown(table_html, unsafe_allow_html=True)
 
+# Add Save Scan Scenario button below the main table
+if st.button("Save Scan Scenario"):
+    # Create a row with all the data in the flat format
+    scenario_data = {
+        "Brand": brand,
+        "Size": size,
+        "Case Cost": case_cost,
+        "# Bottles/Cs": bottles_per_case,
+        "Bottle Cost": bottle_cost,
+        "Base Scan": base_scan,
+        "Deep Scan": deep_scan,
+        "Coupon": coupon,
+        "Everyday Shelf Price": edlp_price,
+        "Everyday GM %": edlp_margins["gm_percent"],
+        "Everyday GM $": edlp_margins["gm_dollars"],
+        "Everyday GM % (With Coupon)": edlp_margins["gm_coupon_percent"],
+        "TPR Price (Base Scan)": tpr_base_price,
+        "TPR GM % (Base Scan)": tpr_base_margins["gm_percent"],
+        "TPR GM $ (Base Scan)": tpr_base_margins["gm_dollars"],
+        "TPR GM % (With Coupon)": tpr_base_margins["gm_coupon_percent"],
+        "TPR Price (Deep Scan)": tpr_deep_price,
+        "TPR GM % (Deep Scan)": tpr_deep_margins["gm_percent"],
+        "TPR GM $ (Deep Scan)": tpr_deep_margins["gm_dollars"],
+        "TPR GM % (With Coupon)": tpr_deep_margins["gm_coupon_percent"],
+        "Ad/Feature Price (Base Scan)": ad_base_price,
+        "Ad GM % (Base Scan)": ad_base_margins["gm_percent"],
+        "Ad GM $ (Base Scan)": ad_base_margins["gm_dollars"],
+        "Ad GM % (With Coupon)": ad_base_margins["gm_coupon_percent"],
+        "Ad/Feature Price (Deep Scan)": ad_deep_price,
+        "Ad GM % (Deep Scan)": ad_deep_margins["gm_percent"],
+        "Ad GM $ (Deep Scan)": ad_deep_margins["gm_dollars"],
+        "Ad GM % (With Coupon)": ad_deep_margins["gm_coupon_percent"]
+    }
+    
+    # Create a DataFrame with the scenario data
+    new_scenario = pd.DataFrame([scenario_data])
+    
+    # Append to scan scenarios
+    if st.session_state.scan_scenarios.empty:
+        st.session_state.scan_scenarios = new_scenario
+    else:
+        st.session_state.scan_scenarios = pd.concat([st.session_state.scan_scenarios, new_scenario], ignore_index=True)
+    
+    st.success("Scan scenario saved successfully!")
+
 # Create tabs for additional features
-tab1, tab2 = st.tabs(["Everyday Price Metrics", "Historical Data"])
+tab1, tab2, tab3 = st.tabs(["Everyday Price Metrics", "Historical Data", "Saved Scan Scenarios"])
 
 with tab1:
     # Add Everyday Price to the table
@@ -350,7 +396,7 @@ with tab2:
     
     # Export button for historical data
     if not st.session_state.historical_data.empty:
-        st.dataframe(st.session_state.historical_data)
+        st.dataframe(st.session_state.historical_data, use_container_width=True)
         
         # Function to create a downloadable Excel file
         def to_excel(df):
@@ -395,3 +441,57 @@ with tab2:
             st.success("Historical data cleared!")
     else:
         st.info("No historical data saved yet. Use the 'Save Current Data' button to start building your dataset.")
+
+with tab3:
+    st.subheader("Saved Scan Scenarios")
+    
+    if st.session_state.scan_scenarios.empty:
+        st.info("No scan scenarios saved yet. Use the 'Save Scan Scenario' button on the main screen to save scenarios.")
+    else:
+        # Display the scenarios in a flat format
+        st.dataframe(st.session_state.scan_scenarios, height=400, use_container_width=True)
+        
+        # Function to create a downloadable Excel file
+        def to_excel_scenarios(df):
+            output = BytesIO()
+            writer = pd.ExcelWriter(output, engine='xlsxwriter')
+            df.to_excel(writer, sheet_name='Scan Scenarios', index=False)
+            
+            # Get the workbook and worksheet objects
+            workbook = writer.book
+            worksheet = writer.sheets['Scan Scenarios']
+            
+            # Set column width and formats
+            format_currency = workbook.add_format({'num_format': '$#,##0.00'})
+            format_percent = workbook.add_format({'num_format': '0.0%'})
+            
+            # Format currency columns
+            for i, col in enumerate(df.columns):
+                if "Price" in col or "Cost" in col or "Scan" in col or "Coupon" in col or "GM $" in col:
+                    worksheet.set_column(i, i, 12, format_currency)
+                elif "GM %" in col:
+                    worksheet.set_column(i, i, 12, format_percent)
+                else:
+                    worksheet.set_column(i, i, 15)
+            
+            # Freeze top row and make it bold
+            worksheet.freeze_panes(1, 0)
+            header_format = workbook.add_format({'bold': True})
+            worksheet.set_row(0, None, header_format)
+            
+            writer.close()
+            return output.getvalue()
+        
+        # Export button
+        if st.button("Export Scan Scenarios to Excel"):
+            excel_file = to_excel_scenarios(st.session_state.scan_scenarios)
+            b64 = base64.b64encode(excel_file).decode()
+            href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="saved_scan_scenarios.xlsx">Download Scan Scenarios Excel File</a>'
+            st.markdown(href, unsafe_allow_html=True)
+            st.success("Export complete! Click the link above to download.")
+        
+        # Clear button
+        if st.button("Clear All Scan Scenarios"):
+            st.session_state.scan_scenarios = pd.DataFrame()
+            st.success("All scan scenarios cleared!")
+            st.experimental_rerun()
