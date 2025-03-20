@@ -69,6 +69,12 @@ st.markdown("""
         margin-right: auto;
         text-align: center;
     }
+    /* Center the logo and title better */
+    .centered-content {
+        max-width: 700px;
+        margin: 0 auto;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -76,16 +82,13 @@ st.markdown("""
 if 'historical_data' not in st.session_state:
     st.session_state.historical_data = pd.DataFrame()
 
-# Add logo and title to the main area
+# Add logo and title to the main area with better centering
+st.markdown('<div class="centered-content">', unsafe_allow_html=True)
 try:
     # Check if the image file exists in the current directory
     if os.path.exists('image.png'):
         image = Image.open('image.png')
-        
-        # Display the image
-        col1, col2, col3 = st.columns([1, 3, 1])
-        with col2:
-            st.image(image, width=600)
+        st.image(image, width=600)
     else:
         st.warning("Logo 'image.png' not found. Make sure it's in the same directory as this app.")
         # List files in the current directory to help debug
@@ -95,6 +98,7 @@ except Exception as e:
     st.write("Please make sure 'image.png' is accessible and not corrupted.")
 
 st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # Create sidebar for inputs
 with st.sidebar:
@@ -200,6 +204,38 @@ tpr_deep_margins = calculate_margin(tpr_deep_price, bottle_cost, deep_scan, coup
 ad_base_margins = calculate_margin(ad_base_price, bottle_cost, base_scan, coupon)
 ad_deep_margins = calculate_margin(ad_deep_price, bottle_cost, deep_scan, coupon)
 
+# Create a current data row in the requested format
+current_data = {
+    "Brand": brand,
+    "Size": size,
+    "Case Cost": case_cost,
+    "# Bottles/Cs": bottles_per_case,
+    "Bottle Cost": bottle_cost,
+    "Base Scan": base_scan,
+    "Deep Scan": deep_scan,
+    "Coupon": coupon,
+    "Everyday Shelf Price": edlp_price,
+    "Everyday GM %": edlp_margins["gm_percent"] / 100,  # Convert to decimal for matching format
+    "Everyday GM $": edlp_margins["gm_dollars"],
+    "Everyday GM % (With Coupon)": edlp_margins["gm_coupon_percent"] / 100,  # Convert to decimal
+    "TPR Price (Base Scan)": tpr_base_price,
+    "TPR GM % (Base Scan)": tpr_base_margins["gm_percent"] / 100,  # Convert to decimal
+    "TPR GM $ (Base Scan)": tpr_base_margins["gm_dollars"],
+    "TPR GM % (With Coupon)": tpr_base_margins["gm_coupon_percent"] / 100,  # Convert to decimal
+    "TPR Price (Deep Scan)": tpr_deep_price,
+    "TPR GM % (Deep Scan)": tpr_deep_margins["gm_percent"] / 100,  # Convert to decimal
+    "TPR GM $ (Deep Scan)": tpr_deep_margins["gm_dollars"],
+    "TPR GM % (With Coupon)": tpr_deep_margins["gm_coupon_percent"] / 100,  # Convert to decimal
+    "Ad/Feature Price (Base Scan)": ad_base_price,
+    "Ad GM % (Base Scan)": ad_base_margins["gm_percent"] / 100,  # Convert to decimal
+    "Ad GM $ (Base Scan)": ad_base_margins["gm_dollars"],
+    "Ad GM % (With Coupon)": ad_base_margins["gm_coupon_percent"] / 100,  # Convert to decimal
+    "Ad/Feature Price (Deep Scan)": ad_deep_price,
+    "Ad GM % (Deep Scan)": ad_deep_margins["gm_percent"] / 100,  # Convert to decimal
+    "Ad GM $ (Deep Scan)": ad_deep_margins["gm_dollars"],
+    "Ad GM % (With Coupon)": ad_deep_margins["gm_coupon_percent"] / 100  # Convert to decimal
+}
+
 # Create the four quadrants layout
 col1, col2 = st.columns(2)
 col3, col4 = st.columns(2)
@@ -226,7 +262,7 @@ with col4:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Create tabs for additional features
-tab1, tab2, tab3 = st.tabs(["EDLP Metrics", "Historical Data", "AI Insights"])
+tab1, tab2, tab3, tab4 = st.tabs(["EDLP Metrics", "Calculated Scans", "Historical Data", "AI Insights"])
 
 with tab1:
     st.markdown("<div class='quadrant'>", unsafe_allow_html=True)
@@ -236,43 +272,60 @@ with tab1:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab2:
+    st.subheader("Calculated Scans")
+    
+    # Convert the current data dictionary to a DataFrame row
+    current_df = pd.DataFrame([current_data])
+    
+    # Display in the required format
+    st.dataframe(current_df)
+    
+    # Export to Excel functionality
+    if st.button("Export Calculated Scans to Excel"):
+        # Function to create a downloadable Excel file
+        def to_excel(df):
+            output = BytesIO()
+            writer = pd.ExcelWriter(output, engine='xlsxwriter')
+            df.to_excel(writer, sheet_name='Calculated Scans', index=False)
+            
+            # Get the workbook and worksheet objects
+            workbook = writer.book
+            worksheet = writer.sheets['Calculated Scans']
+            
+            # Set column width and formats
+            format_currency = workbook.add_format({'num_format': '$#,##0.00'})
+            format_percent = workbook.add_format({'num_format': '0.00%'})
+            
+            # Format currency columns
+            for i, col in enumerate(df.columns):
+                if "Price" in col or "Cost" in col or "Scan" in col or "Coupon" in col or "GM $" in col:
+                    worksheet.set_column(i, i, 12, format_currency)
+                elif "GM %" in col:
+                    worksheet.set_column(i, i, 12, format_percent)
+                else:
+                    worksheet.set_column(i, i, 15)
+            
+            # Freeze top row and make it bold
+            worksheet.freeze_panes(1, 0)
+            header_format = workbook.add_format({'bold': True})
+            worksheet.set_row(0, None, header_format)
+            
+            writer.close()
+            return output.getvalue()
+        
+        excel_file = to_excel(current_df)
+        b64 = base64.b64encode(excel_file).decode()
+        href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="calculated_scans.xlsx">Download Excel File</a>'
+        st.markdown(href, unsafe_allow_html=True)
+        st.success("Export complete! Click the link above to download.")
+
+with tab3:
     st.subheader("Historical Data")
     
     # Add current data to historical dataframe
     if st.button("Save Current Data"):
-        # Create a dataframe with all the data
-        data = {
-            "Brand": [brand],
-            "Size": [size],
-            "Case Cost": [case_cost],
-            "# Bottles/Cs": [bottles_per_case],
-            "Bottle Cost": [bottle_cost],
-            "Base Scan": [base_scan],
-            "Deep Scan": [deep_scan],
-            "Coupon": [coupon],
-            "Everyday Shelf Price": [edlp_price],
-            "Everyday GM %": [edlp_margins["gm_percent"]],
-            "Everyday GM $": [edlp_margins["gm_dollars"]],
-            "Everyday GM % (With Coupon)": [edlp_margins["gm_coupon_percent"]],
-            "TPR Price (Base Scan)": [tpr_base_price],
-            "TPR GM % (Base Scan)": [tpr_base_margins["gm_percent"]],
-            "TPR GM $ (Base Scan)": [tpr_base_margins["gm_dollars"]],
-            "TPR GM % (With Coupon)": [tpr_base_margins["gm_coupon_percent"]],
-            "TPR Price (Deep Scan)": [tpr_deep_price],
-            "TPR GM % (Deep Scan)": [tpr_deep_margins["gm_percent"]],
-            "TPR GM $ (Deep Scan)": [tpr_deep_margins["gm_dollars"]],
-            "TPR GM % (With Coupon)": [tpr_deep_margins["gm_coupon_percent"]],
-            "Ad/Feature Price (Base Scan)": [ad_base_price],
-            "Ad GM % (Base Scan)": [ad_base_margins["gm_percent"]],
-            "Ad GM $ (Base Scan)": [ad_base_margins["gm_dollars"]],
-            "Ad GM % (With Coupon)": [ad_base_margins["gm_coupon_percent"]],
-            "Ad/Feature Price (Deep Scan)": [ad_deep_price],
-            "Ad GM % (Deep Scan)": [ad_deep_margins["gm_percent"]],
-            "Ad GM $ (Deep Scan)": [ad_deep_margins["gm_dollars"]],
-            "Ad GM % (With Coupon)": [ad_deep_margins["gm_coupon_percent"]]
-        }
-        
-        new_data = pd.DataFrame(data)
+        # Create a new data frame from the current data
+        new_data = pd.DataFrame([current_data])
         
         # Append to historical data
         if st.session_state.historical_data.empty:
@@ -298,7 +351,7 @@ with tab2:
             
             # Set column width and formats
             format_currency = workbook.add_format({'num_format': '$#,##0.00'})
-            format_percent = workbook.add_format({'num_format': '0.0%'})
+            format_percent = workbook.add_format({'num_format': '0.00%'})
             
             # Format currency columns
             for i, col in enumerate(df.columns):
@@ -331,7 +384,7 @@ with tab2:
         st.info("No historical data saved yet. Use the 'Save Current Data' button to start building your dataset.")
 
 # GenAI Insights Section
-with tab3:
+with tab4:
     st.subheader("💡 AI-Powered Insights & Action Plan")
 
     # Initialize OpenAI client
@@ -570,26 +623,3 @@ with tab3:
                     if st.button("Is my coupon strategy optimal for this product?"):
                         st.session_state.user_question = "Is my coupon strategy optimal for this product?"
                         st.experimental_rerun()
-    else:
-        st.info("Enter your question about pricing strategy and click 'Ask Question' to get a customized response from the AI assistant.")
-
-# Add some instructions
-with st.expander("How to use this calculator"):
-    st.write("""
-    1. Enter product information in the sidebar (Brand, Size, Case Cost, etc.)
-    2. Enter promotion information (Base Scan, Deep Scan, Coupon)
-    3. Enter pricing information for each scenario
-    4. The calculator will automatically show the gross margin percentage and dollar amount for each scenario
-    5. Save your data to the historical record tab to track your margin calculations over time
-    6. Use the AI Insights tab to get customized recommendations and answer specific questions
-    
-    **Key Terminology:**
-    - **Base Scan**: Standard scan amount applied to the product
-    - **Deep Scan**: Enhanced scan amount for deeper promotions
-    - **TPR**: Temporary Price Reduction
-    - **EDLP**: Everyday Low Price
-    - **GM**: Gross Margin
-    """)
-
-# Note about API key for users
-st.caption("Note: AI features require an OpenAI API key. Make sure to replace the placeholder in the code with your actual key.")
