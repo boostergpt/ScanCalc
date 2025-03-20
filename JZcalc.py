@@ -46,10 +46,12 @@ st.markdown("""
         text-align: center;
         margin-bottom: 20px;
     }
-    .logo-container {
-        text-align: center;
-        margin: 0 auto;
-        display: block;
+    .centered-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        margin-bottom: 20px;
     }
     .quadrant {
         background-color: #f8f9fa;
@@ -63,39 +65,53 @@ st.markdown("""
         margin-bottom: 10px;
         text-align: center;
     }
-    [data-testid="stImage"] {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
+    .edlp-section {
+        background-color: #e9ecef;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 25px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+    .edlp-metric {
+        flex: 1;
+        margin: 0 10px;
         text-align: center;
     }
-    /* Center the logo and title better */
-    .centered-content {
-        max-width: 700px;
-        margin: 0 auto;
-        text-align: center;
+    .edlp-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+    .edlp-label {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    .save-button {
+        margin-top: 20px;
+        margin-bottom: 20px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state for storing historical data
+# Initialize session state for storing historical data and calculated scans
 if 'historical_data' not in st.session_state:
     st.session_state.historical_data = pd.DataFrame()
+    
+if 'calculated_scans' not in st.session_state:
+    st.session_state.calculated_scans = pd.DataFrame()
 
 # Add logo and title to the main area with better centering
-st.markdown('<div class="centered-content">', unsafe_allow_html=True)
+st.markdown('<div class="centered-logo">', unsafe_allow_html=True)
 try:
     # Check if the image file exists in the current directory
     if os.path.exists('image.png'):
         image = Image.open('image.png')
-        st.image(image, width=600)
+        st.image(image, width=500)  # Adjusted width
     else:
         st.warning("Logo 'image.png' not found. Make sure it's in the same directory as this app.")
-        # List files in the current directory to help debug
-        st.write(f"Files in the current directory: {os.listdir()}")
 except Exception as e:
     st.error(f"Error loading image: {str(e)}")
-    st.write("Please make sure 'image.png' is accessible and not corrupted.")
 
 st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
@@ -236,6 +252,51 @@ current_data = {
     "Ad GM % (With Coupon)": ad_deep_margins["gm_coupon_percent"] / 100  # Convert to decimal
 }
 
+# EDLP Metrics section at the top as a single row
+st.markdown("<div class='edlp-section'>", unsafe_allow_html=True)
+
+# EDLP Price
+st.markdown(f"""
+<div class='edlp-metric'>
+    <div class='edlp-label'>EDLP Price</div>
+    <div class='edlp-value'>${edlp_price:.2f}</div>
+</div>
+""", unsafe_allow_html=True)
+
+# EDLP Margin %
+st.markdown(f"""
+<div class='edlp-metric'>
+    <div class='edlp-label'>EDLP Margin %</div>
+    <div class='edlp-value'>{edlp_margins["gm_percent"]:.1f}%</div>
+</div>
+""", unsafe_allow_html=True)
+
+# EDLP Margin $
+st.markdown(f"""
+<div class='edlp-metric'>
+    <div class='edlp-label'>EDLP Margin $</div>
+    <div class='edlp-value'>${edlp_margins["gm_dollars"]:.2f}</div>
+</div>
+""", unsafe_allow_html=True)
+
+# EDLP With Coupon %
+st.markdown(f"""
+<div class='edlp-metric'>
+    <div class='edlp-label'>With Coupon %</div>
+    <div class='edlp-value'>{edlp_margins["gm_coupon_percent"]:.1f}%</div>
+</div>
+""", unsafe_allow_html=True)
+
+# EDLP With Coupon $
+st.markdown(f"""
+<div class='edlp-metric'>
+    <div class='edlp-label'>With Coupon $</div>
+    <div class='edlp-value'>${edlp_margins["gm_coupon_dollars"]:.2f}</div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
+
 # Create the four quadrants layout
 col1, col2 = st.columns(2)
 col3, col4 = st.columns(2)
@@ -261,69 +322,81 @@ with col4:
     display_margin_metrics(col4, "Ad/Feature (Deep Scan)", ad_deep_price, bottle_cost, deep_scan, coupon)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Create tabs for additional features
-tab1, tab2, tab3, tab4 = st.tabs(["EDLP Metrics", "Calculated Scans", "Historical Data", "AI Insights"])
+# Save button in the center
+st.markdown('<div class="save-button">', unsafe_allow_html=True)
+if st.button("Save", key="save_button"):
+    # Create a new data frame from the current data
+    new_data = pd.DataFrame([current_data])
+    
+    # Add to calculated scans
+    if st.session_state.calculated_scans.empty:
+        st.session_state.calculated_scans = new_data
+    else:
+        st.session_state.calculated_scans = pd.concat([st.session_state.calculated_scans, new_data], ignore_index=True)
+    
+    st.success("Data saved to Calculated Scans!")
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Create tabs for additional features - now without EDLP tab
+tab1, tab2, tab3 = st.tabs(["Calculated Scans", "Historical Data", "AI Insights"])
 
 with tab1:
-    st.markdown("<div class='quadrant'>", unsafe_allow_html=True)
-    # Create a container for EDLP metrics
-    edlp_container = st.container()
-    display_margin_metrics(edlp_container, "Everyday Low Price", edlp_price, bottle_cost, 0, coupon)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with tab2:
     st.subheader("Calculated Scans")
     
-    # Convert the current data dictionary to a DataFrame row
-    current_df = pd.DataFrame([current_data])
-    
-    # Display in the required format
-    st.dataframe(current_df)
-    
-    # Export to Excel functionality
-    if st.button("Export Calculated Scans to Excel"):
-        # Function to create a downloadable Excel file
-        def to_excel(df):
-            output = BytesIO()
-            writer = pd.ExcelWriter(output, engine='xlsxwriter')
-            df.to_excel(writer, sheet_name='Calculated Scans', index=False)
-            
-            # Get the workbook and worksheet objects
-            workbook = writer.book
-            worksheet = writer.sheets['Calculated Scans']
-            
-            # Set column width and formats
-            format_currency = workbook.add_format({'num_format': '$#,##0.00'})
-            format_percent = workbook.add_format({'num_format': '0.00%'})
-            
-            # Format currency columns
-            for i, col in enumerate(df.columns):
-                if "Price" in col or "Cost" in col or "Scan" in col or "Coupon" in col or "GM $" in col:
-                    worksheet.set_column(i, i, 12, format_currency)
-                elif "GM %" in col:
-                    worksheet.set_column(i, i, 12, format_percent)
-                else:
-                    worksheet.set_column(i, i, 15)
-            
-            # Freeze top row and make it bold
-            worksheet.freeze_panes(1, 0)
-            header_format = workbook.add_format({'bold': True})
-            worksheet.set_row(0, None, header_format)
-            
-            writer.close()
-            return output.getvalue()
+    # Display the data in the required format
+    if not st.session_state.calculated_scans.empty:
+        st.dataframe(st.session_state.calculated_scans)
         
-        excel_file = to_excel(current_df)
-        b64 = base64.b64encode(excel_file).decode()
-        href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="calculated_scans.xlsx">Download Excel File</a>'
-        st.markdown(href, unsafe_allow_html=True)
-        st.success("Export complete! Click the link above to download.")
+        # Export to Excel functionality
+        if st.button("Export Calculated Scans to Excel"):
+            # Function to create a downloadable Excel file
+            def to_excel(df):
+                output = BytesIO()
+                writer = pd.ExcelWriter(output, engine='xlsxwriter')
+                df.to_excel(writer, sheet_name='Calculated Scans', index=False)
+                
+                # Get the workbook and worksheet objects
+                workbook = writer.book
+                worksheet = writer.sheets['Calculated Scans']
+                
+                # Set column width and formats
+                format_currency = workbook.add_format({'num_format': '$#,##0.00'})
+                format_percent = workbook.add_format({'num_format': '0.00%'})
+                
+                # Format currency columns
+                for i, col in enumerate(df.columns):
+                    if "Price" in col or "Cost" in col or "Scan" in col or "Coupon" in col or "GM $" in col:
+                        worksheet.set_column(i, i, 12, format_currency)
+                    elif "GM %" in col:
+                        worksheet.set_column(i, i, 12, format_percent)
+                    else:
+                        worksheet.set_column(i, i, 15)
+                
+                # Freeze top row and make it bold
+                worksheet.freeze_panes(1, 0)
+                header_format = workbook.add_format({'bold': True})
+                worksheet.set_row(0, None, header_format)
+                
+                writer.close()
+                return output.getvalue()
+            
+            excel_file = to_excel(st.session_state.calculated_scans)
+            b64 = base64.b64encode(excel_file).decode()
+            href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="calculated_scans.xlsx">Download Excel File</a>'
+            st.markdown(href, unsafe_allow_html=True)
+            st.success("Export complete! Click the link above to download.")
+            
+        if st.button("Clear Calculated Scans"):
+            st.session_state.calculated_scans = pd.DataFrame()
+            st.success("Calculated scans cleared!")
+    else:
+        st.info("No data in Calculated Scans yet. Use the 'Save' button to add data.")
 
-with tab3:
+with tab2:
     st.subheader("Historical Data")
     
     # Add current data to historical dataframe
-    if st.button("Save Current Data"):
+    if st.button("Save Current Data to History"):
         # Create a new data frame from the current data
         new_data = pd.DataFrame([current_data])
         
@@ -381,17 +454,34 @@ with tab3:
             st.session_state.historical_data = pd.DataFrame()
             st.success("Historical data cleared!")
     else:
-        st.info("No historical data saved yet. Use the 'Save Current Data' button to start building your dataset.")
+        st.info("No historical data saved yet. Use the 'Save Current Data to History' button to start building your dataset.")
 
 # GenAI Insights Section
-with tab4:
+with tab3:
     st.subheader("💡 AI-Powered Insights & Action Plan")
 
     # Initialize OpenAI client
     openai.api_key = OPENAI_API_KEY
 
     def generate_insights(brand, size, pricing_data, market=""):
-        """
+        
+        try:
+            # Call OpenAI API
+            response = openai.chat.completions.create(
+                model="gpt-4o",  # Using GPT-4o but can be changed to other models
+                messages=[
+                    {"role": "system", "content": "You are an AI assistant specializing in beverage industry pricing and strategy."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7
+            )
+            
+            # Extract the response
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            # Handle errors gracefully
+            return f"Error generating response: {str(e)}\nPlease check your API key and internet connection."
         Generate insights and action plan using OpenAI API based on calculator inputs
         """
         # Check if API key has been set
@@ -416,6 +506,15 @@ with tab4:
         - TPR with Base Scan: ${pricing_data['tpr_base_price']:.2f} (Margin: {pricing_data['tpr_base_margin']:.1f}%)
         - TPR with Deep Scan: ${pricing_data['tpr_deep_price']:.2f} (Margin: {pricing_data['tpr_deep_margin']:.1f}%)
         - Ad/Feature with Base Scan: ${pricing_data['ad_base_price']:.2f} (Margin: {pricing_data['ad_base_margin']:.1f}%)
+        - Ad/Feature with Deep Scan: ${pricing_data['ad_deep_price']:.2f} (Margin: {pricing_data['ad_deep_margin']:.1f}%)
+        
+        Base Cost: ${pricing_data['bottle_cost']:.2f}
+        
+        Question: {question}
+        
+        Provide a direct, specific answer based on beverage industry expertise. Be helpful, concise, and practical.
+        If the question cannot be answered with the information provided, suggest what additional data would be needed.
+        """ad_base_margin']:.1f}%)
         - Ad/Feature with Deep Scan: ${pricing_data['ad_deep_price']:.2f} (Margin: {pricing_data['ad_deep_margin']:.1f}%)
         
         Base Cost: ${pricing_data['bottle_cost']:.2f}
@@ -542,84 +641,4 @@ with tab4:
         - Everyday Price: ${pricing_data['everyday_price']:.2f} (Margin: {pricing_data['everyday_margin']:.1f}%)
         - TPR with Base Scan: ${pricing_data['tpr_base_price']:.2f} (Margin: {pricing_data['tpr_base_margin']:.1f}%)
         - TPR with Deep Scan: ${pricing_data['tpr_deep_price']:.2f} (Margin: {pricing_data['tpr_deep_margin']:.1f}%)
-        - Ad/Feature with Base Scan: ${pricing_data['ad_base_price']:.2f} (Margin: {pricing_data['ad_base_margin']:.1f}%)
-        - Ad/Feature with Deep Scan: ${pricing_data['ad_deep_price']:.2f} (Margin: {pricing_data['ad_deep_margin']:.1f}%)
-        
-        Base Cost: ${pricing_data['bottle_cost']:.2f}
-        
-        Question: {question}
-        
-        Provide a direct, specific answer based on beverage industry expertise. Be helpful, concise, and practical.
-        If the question cannot be answered with the information provided, suggest what additional data would be needed.
-        """
-        
-        try:
-            # Call OpenAI API
-            response = openai.chat.completions.create(
-                model="gpt-4o",  # Using GPT-4o but can be changed to other models
-                messages=[
-                    {"role": "system", "content": "You are an AI assistant specializing in beverage industry pricing and strategy."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7
-            )
-            
-            # Extract the response
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            # Handle errors gracefully
-            return f"Error generating response: {str(e)}\nPlease check your API key and internet connection."
-
-    # User question input
-    user_question = st.text_area("Enter your specific question about pricing strategy:", 
-                                placeholder="Example: How does my TPR Deep strategy compare to industry standards? What would be the impact of increasing my base scan by $1?")
-
-    # Button to submit question
-    if st.button("Ask Question", key="ask_question"):
-        # Check if brand and question are provided
-        if not brand:
-            st.warning("Please enter a brand name in the sidebar before asking a question")
-        elif not user_question:
-            st.warning("Please enter a question")
-        else:
-            with st.spinner("Generating response..."):
-                # Gather pricing data to send to the API
-                pricing_data = {
-                    "everyday_price": edlp_price,
-                    "everyday_margin": edlp_margins["gm_percent"],
-                    "tpr_base_price": tpr_base_price,
-                    "tpr_base_margin": tpr_base_margins["gm_percent"],
-                    "tpr_deep_price": tpr_deep_price,
-                    "tpr_deep_margin": tpr_deep_margins["gm_percent"],
-                    "ad_base_price": ad_base_price,
-                    "ad_base_margin": ad_base_margins["gm_percent"],
-                    "ad_deep_price": ad_deep_price,
-                    "ad_deep_margin": ad_deep_margins["gm_percent"],
-                    "bottle_cost": bottle_cost
-                }
-                
-                # Get response to question
-                answer = ask_question(user_question, brand, size, pricing_data, market)
-                
-                # Display answer in a nice box
-                st.markdown("### Answer")
-                st.markdown(f"{answer}")
-                
-                # Show some suggested follow-up questions
-                st.markdown("#### Suggested Follow-up Questions")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("What impact would a 5% price increase have on my margins?"):
-                        st.session_state.user_question = "What impact would a 5% price increase have on my margins?"
-                        st.experimental_rerun()
-                    if st.button("How does my pricing compare to market competitors?"):
-                        st.session_state.user_question = "How does my pricing compare to market competitors?"
-                        st.experimental_rerun()
-                with col2:
-                    if st.button("Which promotion offers the best balance of volume and margin?"):
-                        st.session_state.user_question = "Which promotion offers the best balance of volume and margin?"
-                        st.experimental_rerun()
-                    if st.button("Is my coupon strategy optimal for this product?"):
-                        st.session_state.user_question = "Is my coupon strategy optimal for this product?"
-                        st.experimental_rerun()
+        - Ad/Feature with Base Scan: ${pricing_data['ad_base_price']:.2f} (Margin: {pricing_data['
