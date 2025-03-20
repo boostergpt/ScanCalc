@@ -3,14 +3,8 @@ import pandas as pd
 import numpy as np
 import base64
 from io import BytesIO
-import openai
-import json
 from PIL import Image
 import os
-
-# OpenAI API Configuration
-# IMPORTANT: Replace this with your actual API key when running the app
-OPENAI_API_KEY = "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"  # You'll replace this when running
 
 # Set page config
 st.set_page_config(
@@ -218,38 +212,94 @@ tpr_deep_margins = calculate_margin(tpr_deep_price, bottle_cost, deep_scan, coup
 ad_base_margins = calculate_margin(ad_base_price, bottle_cost, base_scan, coupon)
 ad_deep_margins = calculate_margin(ad_deep_price, bottle_cost, deep_scan, coupon)
 
-# Create the four quadrants layout
-col1, col2 = st.columns(2)
-col3, col4 = st.columns(2)
+# Create data for the pricing comparison table
+pricing_data = {
+    "Pricing Scenario": ["TPR (Base Scan)", "TPR (Deep Scan)", "Ad/Feature (Base Scan)", "Ad/Feature (Deep Scan)"],
+    "Price": [f"${tpr_base_price:.2f}", f"${tpr_deep_price:.2f}", f"${ad_base_price:.2f}", f"${ad_deep_price:.2f}"],
+    "Gross Margin %": [f"{tpr_base_margins['gm_percent']:.1f}%", f"{tpr_deep_margins['gm_percent']:.1f}%", 
+                      f"{ad_base_margins['gm_percent']:.1f}%", f"{ad_deep_margins['gm_percent']:.1f}%"],
+    "Gross Margin $": [f"${tpr_base_margins['gm_dollars']:.2f}", f"${tpr_deep_margins['gm_dollars']:.2f}", 
+                      f"${ad_base_margins['gm_dollars']:.2f}", f"${ad_deep_margins['gm_dollars']:.2f}"],
+    "With Coupon %": [f"{tpr_base_margins['gm_coupon_percent']:.1f}%", f"{tpr_deep_margins['gm_coupon_percent']:.1f}%", 
+                     f"{ad_base_margins['gm_coupon_percent']:.1f}%", f"{ad_deep_margins['gm_coupon_percent']:.1f}%"],
+    "With Coupon $": [f"${tpr_base_margins['gm_coupon_dollars']:.2f}", f"${tpr_deep_margins['gm_coupon_dollars']:.2f}", 
+                     f"${ad_base_margins['gm_coupon_dollars']:.2f}", f"${ad_deep_margins['gm_coupon_dollars']:.2f}"]
+}
 
-# Display metrics in each quadrant
-with col1:
-    st.markdown("<div class='quadrant'>", unsafe_allow_html=True)
-    display_margin_metrics(col1, "TPR (Base Scan)", tpr_base_price, bottle_cost, base_scan, coupon)
-    st.markdown("</div>", unsafe_allow_html=True)
+# Display the table with custom styling
+st.markdown("""
+<style>
+.pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+}
+.pricing-table th {
+    background-color: #f0f2f6;
+    padding: 12px;
+    text-align: left;
+    font-weight: bold;
+    border: 1px solid #ddd;
+}
+.pricing-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+}
+.pricing-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+.pricing-table tr:hover {
+    background-color: #e9ecef;
+}
+</style>
+""", unsafe_allow_html=True)
 
-with col2:
-    st.markdown("<div class='quadrant'>", unsafe_allow_html=True)
-    display_margin_metrics(col2, "Ad/Feature (Base Scan)", ad_base_price, bottle_cost, base_scan, coupon)
-    st.markdown("</div>", unsafe_allow_html=True)
+# Create the HTML table
+table_html = "<table class='pricing-table'><thead><tr>"
+# Add headers
+for col in pricing_data.keys():
+    table_html += f"<th>{col}</th>"
+table_html += "</tr></thead><tbody>"
 
-with col3:
-    st.markdown("<div class='quadrant'>", unsafe_allow_html=True)
-    display_margin_metrics(col3, "TPR (Deep Scan)", tpr_deep_price, bottle_cost, deep_scan, coupon)
-    st.markdown("</div>", unsafe_allow_html=True)
+# Add rows
+for i in range(len(pricing_data["Pricing Scenario"])):
+    table_html += "<tr>"
+    for col in pricing_data.keys():
+        table_html += f"<td>{pricing_data[col][i]}</td>"
+    table_html += "</tr>"
+table_html += "</tbody></table>"
 
-with col4:
-    st.markdown("<div class='quadrant'>", unsafe_allow_html=True)
-    display_margin_metrics(col4, "Ad/Feature (Deep Scan)", ad_deep_price, bottle_cost, deep_scan, coupon)
-    st.markdown("</div>", unsafe_allow_html=True)
+# Display the table
+st.markdown(table_html, unsafe_allow_html=True)
 
 # Create tabs for additional features
-tab1, tab2, tab3 = st.tabs(["Everyday Price Metrics", "Historical Data", "AI Insights"])
+tab1, tab2 = st.tabs(["Everyday Price Metrics", "Historical Data"])
 
 with tab1:
-    st.markdown("<div class='quadrant'>", unsafe_allow_html=True)
-    display_margin_metrics(st, "Everyday Price", edlp_price, bottle_cost, 0, coupon)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Add Everyday Price to the table
+    everyday_data = {
+        "Pricing Scenario": ["Everyday Price"],
+        "Price": [f"${edlp_price:.2f}"],
+        "Gross Margin %": [f"{edlp_margins['gm_percent']:.1f}%"],
+        "Gross Margin $": [f"${edlp_margins['gm_dollars']:.2f}"],
+        "With Coupon %": [f"{edlp_margins['gm_coupon_percent']:.1f}%"],
+        "With Coupon $": [f"${edlp_margins['gm_coupon_dollars']:.2f}"]
+    }
+    
+    # Create HTML table for Everyday Price
+    ep_table_html = "<table class='pricing-table'><thead><tr>"
+    # Add headers
+    for col in everyday_data.keys():
+        ep_table_html += f"<th>{col}</th>"
+    ep_table_html += "</tr></thead><tbody><tr>"
+    # Add the single row
+    for col in everyday_data.keys():
+        ep_table_html += f"<td>{everyday_data[col][0]}</td>"
+    ep_table_html += "</tr></tbody></table>"
+    
+    # Display the Everyday Price table
+    st.markdown(ep_table_html, unsafe_allow_html=True)
 
 with tab2:
     st.subheader("Historical Data")
@@ -345,230 +395,3 @@ with tab2:
             st.success("Historical data cleared!")
     else:
         st.info("No historical data saved yet. Use the 'Save Current Data' button to start building your dataset.")
-
-# GenAI Insights Section
-with tab3:
-    st.subheader("💡 AI-Powered Insights & Action Plan")
-
-    # Initialize OpenAI client
-    openai.api_key = OPENAI_API_KEY
-
-    def generate_insights(brand, size, pricing_data, market=""):
-        """
-        Generate insights and action plan using OpenAI API based on calculator inputs
-        """
-        # Check if API key has been set
-        if openai.api_key == "YOUR_OPENAI_API_KEY_HERE":
-            return {
-                "market_insights": "Please set your OpenAI API key to enable AI-powered insights.",
-                "competitive_analysis": "",
-                "action_plan": "",
-                "promotion_strategy": ""
-            }
-        
-        # Create context for the AI
-        prompt = f"""
-        You are an expert beverage industry analyst and pricing strategist. Generate insights and an action plan for:
-        
-        Brand: {brand}
-        Size: {size}
-        Market: {market if market else "Not specified"}
-        
-        Current pricing structure:
-        - Everyday Price: ${pricing_data['everyday_price']:.2f} (Margin: {pricing_data['everyday_margin']:.1f}%)
-        - TPR with Base Scan: ${pricing_data['tpr_base_price']:.2f} (Margin: {pricing_data['tpr_base_margin']:.1f}%)
-        - TPR with Deep Scan: ${pricing_data['tpr_deep_price']:.2f} (Margin: {pricing_data['tpr_deep_margin']:.1f}%)
-        - Ad/Feature with Base Scan: ${pricing_data['ad_base_price']:.2f} (Margin: {pricing_data['ad_base_margin']:.1f}%)
-        - Ad/Feature with Deep Scan: ${pricing_data['ad_deep_price']:.2f} (Margin: {pricing_data['ad_deep_margin']:.1f}%)
-        
-        Base Cost: ${pricing_data['bottle_cost']:.2f}
-        
-        Provide these four sections:
-        1. Market Insights: Brief analysis of the current market for this product
-        2. Competitive Analysis: How this pricing strategy compares to competitors
-        3. Recommended Action Plan: 3-4 bullet point action items
-        4. Promotional Strategy: Specific recommendation on which pricing scenario to focus on
-        
-        Your response should be concise, specific to this brand and size, and focused on actionable insights.
-        Format response as JSON with keys: market_insights, competitive_analysis, action_plan, promotion_strategy.
-        """
-        
-        try:
-            # Call OpenAI API
-            response = openai.chat.completions.create(
-                model="gpt-4o",  # Using GPT-4o but can be changed to other models
-                messages=[
-                    {"role": "system", "content": "You are an AI assistant specializing in beverage industry pricing and strategy."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7
-            )
-            
-            # Extract and parse the response
-            content = response.choices[0].message.content
-            
-            # Extract JSON from the response (in case there's additional text)
-            try:
-                # Try to parse the entire response as JSON
-                insights = json.loads(content)
-            except json.JSONDecodeError:
-                # If that fails, look for JSON within the text (common with LLM outputs)
-                import re
-                json_match = re.search(r'```json\n(.*?)\n```', content, re.DOTALL)
-                if json_match:
-                    insights = json.loads(json_match.group(1))
-                else:
-                    # Fallback if JSON parsing fails
-                    insights = {
-                        "market_insights": "Could not generate structured insights. Please check your API key and try again.",
-                        "competitive_analysis": "",
-                        "action_plan": "",
-                        "promotion_strategy": ""
-                    }
-            
-            return insights
-            
-        except Exception as e:
-            # Handle errors gracefully
-            return {
-                "market_insights": f"Error generating insights: {str(e)}",
-                "competitive_analysis": "Please check your API key and internet connection.",
-                "action_plan": "",
-                "promotion_strategy": ""
-            }
-
-    # Button to generate insights
-    if st.button("Generate AI Insights", key="generate_insights"):
-        # Check if brand is provided
-        if not brand:
-            st.warning("Please enter a brand name in the sidebar to generate insights")
-        else:
-            with st.spinner("Generating insights and action plan..."):
-                # Gather pricing data to send to the API
-                pricing_data = {
-                    "everyday_price": edlp_price,
-                    "everyday_margin": edlp_margins["gm_percent"],
-                    "tpr_base_price": tpr_base_price,
-                    "tpr_base_margin": tpr_base_margins["gm_percent"],
-                    "tpr_deep_price": tpr_deep_price,
-                    "tpr_deep_margin": tpr_deep_margins["gm_percent"],
-                    "ad_base_price": ad_base_price,
-                    "ad_base_margin": ad_base_margins["gm_percent"],
-                    "ad_deep_price": ad_deep_price,
-                    "ad_deep_margin": ad_deep_margins["gm_percent"],
-                    "bottle_cost": bottle_cost,
-                    "ad_base_margin": ad_base_margins["gm_percent"],
-                    "ad_deep_price": ad_deep_price,
-                    "ad_deep_margin": ad_deep_margins["gm_percent"],
-                    "bottle_cost": bottle_cost
-                }
-                
-                # Generate insights
-                insights = generate_insights(brand, size, pricing_data, market)
-                
-                # Display insights in nicely formatted sections
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown("### Market Insights")
-                    st.markdown(f"{insights['market_insights']}")
-                    
-                    st.markdown("### Recommended Action Plan")
-                    st.markdown(f"{insights['action_plan']}")
-                    
-                with col2:
-                    st.markdown("### Competitive Analysis")
-                    st.markdown(f"{insights['competitive_analysis']}")
-                    
-                    st.markdown("### Promotional Strategy")
-                    st.markdown(f"{insights['promotion_strategy']}")
-    else:
-        st.info("Enter your product details and click 'Generate AI Insights' to receive customized recommendations and market analysis.")
-
-    # Custom Questions Section
-    st.markdown("---")
-    st.subheader("💬 Ask Questions About Your Strategy")
-
-    def ask_question(question, brand, size, pricing_data, market=""):
-        """
-        Allow users to ask specific questions about their pricing strategy
-        """
-        # Check if API key has been set
-        if openai.api_key == "YOUR_OPENAI_API_KEY_HERE":
-            return "Please set your OpenAI API key to enable this feature."
-        
-        # Create context for the AI
-        prompt = f"""
-        You are an expert beverage industry analyst and pricing strategist. Answer the following question specifically for:
-        
-        Brand: {brand}
-        Size: {size}
-        Market: {market if market else "Not specified"}
-        
-        Current pricing structure:
-        - Everyday Price: ${pricing_data['everyday_price']:.2f} (Margin: {pricing_data['everyday_margin']:.1f}%)
-        - TPR with Base Scan: ${pricing_data['tpr_base_price']:.2f} (Margin: {pricing_data['tpr_base_margin']:.1f}%)
-        - TPR with Deep Scan: ${pricing_data['tpr_deep_price']:.2f} (Margin: {pricing_data['tpr_deep_margin']:.1f}%)
-        - Ad/Feature with Base Scan: ${pricing_data['ad_base_price']:.2f} (Margin: {pricing_data['ad_base_margin']:.1f}%)
-        - Ad/Feature with Deep Scan: ${pricing_data['ad_deep_price']:.2f} (Margin: {pricing_data['ad_deep_margin']:.1f}%)
-        
-        Base Cost: ${pricing_data['bottle_cost']:.2f}
-        
-        Question: {question}
-        
-        Provide a direct, specific answer based on beverage industry expertise. Be helpful, concise, and practical.
-        If the question cannot be answered with the information provided, suggest what additional data would be needed.
-        """
-        
-        try:
-            # Call OpenAI API
-            response = openai.chat.completions.create(
-                model="gpt-4o",  # Using GPT-4o but can be changed to other models
-                messages=[
-                    {"role": "system", "content": "You are an AI assistant specializing in beverage industry pricing and strategy."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7
-            )
-            
-            # Extract the response
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            # Handle errors gracefully
-            return f"Error generating response: {str(e)}\nPlease check your API key and internet connection."
-
-    # User question input
-    user_question = st.text_area("Enter your specific question about pricing strategy:", 
-                                placeholder="Example: How does my TPR Deep strategy compare to industry standards? What would be the impact of increasing my base scan by $1?")
-
-    # Button to submit question
-    if st.button("Ask Question", key="ask_question"):
-        # Check if brand and question are provided
-        if not brand:
-            st.warning("Please enter a brand name in the sidebar before asking a question")
-        elif not user_question:
-            st.warning("Please enter a question")
-        else:
-            with st.spinner("Generating response..."):
-                # Gather pricing data to send to the API
-                pricing_data = {
-                    "everyday_price": edlp_price,
-                    "everyday_margin": edlp_margins["gm_percent"],
-                    "tpr_base_price": tpr_base_price,
-                    "tpr_base_margin": tpr_base_margins["gm_percent"],
-                    "tpr_deep_price": tpr_deep_price,
-                    "tpr_deep_margin": tpr_deep_margins["gm_percent"],
-                    "ad_base_price": ad_base_price,
-                    "ad_base_margin": ad_base_margins["gm_percent"],
-                    "ad_deep_price": ad_deep_price,
-                    "ad_deep_margin": ad_deep_margins["gm_percent"],
-                    "bottle_cost": bottle_cost
-                }
-                
-                # Ask the question
-                answer = ask_question(user_question, brand, size, pricing_data, market)
-                
-                # Display the answer
-                st.markdown("### Answer")
-                st.markdown(answer)
