@@ -1,4 +1,12 @@
 import streamlit as st
+# Set page config FIRST
+st.set_page_config(
+    page_title="Margin Calculator",
+    page_icon="🧮",
+    layout="wide"
+)
+
+# Then import other libraries
 import pandas as pd
 import numpy as np
 import base64
@@ -8,22 +16,12 @@ import json
 from PIL import Image
 import os
 
-# OpenAI API Configuration
-# IMPORTANT: Replace this with your actual API key when running the app
-# OpenAI API Configuration
+# OpenAI API Configuration - Move the st.warning after set_page_config
 try:
     OPENAI_API_KEY = st.secrets["api_keys"]["openai"]
 except KeyError:
     OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE"  # Fallback value
     st.warning("OpenAI API key is not set in secrets. AI features will not work.")
-
-
-# Set page config
-st.set_page_config(
-    page_title="Margin Calculator",
-    page_icon="🧮",
-    layout="wide"
-)
 
 # Custom CSS for better styling
 st.markdown("""
