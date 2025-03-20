@@ -117,6 +117,19 @@ st.markdown("""
     .pricing-table tr:hover {
         background-color: #e9ecef;
     }
+    .delete-button {
+        background-color: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1.1rem;
+        margin: 5px;
+    }
+    .delete-button:hover {
+        background-color: #e74c3c;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -138,33 +151,6 @@ except:
     st.warning("Logo 'image.png' not found. Please add it to the same directory as the app.")
 
 st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_html=True)
-
-# Calculate margins for Everyday Price
-edlp_margins = calculate_margin(edlp_price, bottle_cost, 0, coupon)
-
-# Add Everyday Price table at the top
-everyday_data = {
-    "Pricing Scenario": ["Everyday Price"],
-    "Price": [f"${edlp_price:.2f}"],
-    "Gross Margin %": [f"{edlp_margins['gm_percent']:.1f}%"],
-    "Gross Margin $": [f"${edlp_margins['gm_dollars']:.2f}"],
-    "With Coupon %": [f"{edlp_margins['gm_coupon_percent']:.1f}%"],
-    "With Coupon $": [f"${edlp_margins['gm_coupon_dollars']:.2f}"]
-}
-
-# Create HTML table for Everyday Price
-ep_table_html = "<table class='pricing-table'><thead><tr>"
-# Add headers
-for col in everyday_data.keys():
-    ep_table_html += f"<th>{col}</th>"
-ep_table_html += "</tr></thead><tbody><tr>"
-# Add the single row
-for col in everyday_data.keys():
-    ep_table_html += f"<td>{everyday_data[col][0]}</td>"
-ep_table_html += "</tr></tbody></table>"
-
-# Display the Everyday Price table
-st.markdown(ep_table_html, unsafe_allow_html=True)
 
 # Create sidebar for inputs
 with st.sidebar:
@@ -203,7 +189,7 @@ with st.sidebar:
     ad_base_price = st.number_input("Ad/Feature Base Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     ad_deep_price = st.number_input("Ad/Feature Deep Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     
-    # Optional market input for AI insights
+    # Optional market input
     market = st.text_input("Market (State/Region)", "")
 
 # Helper function to calculate margins (similar to BuildMarginString in VBA)
@@ -229,41 +215,34 @@ def calculate_margin(price, cost, scan, coupon):
             "gm_coupon_dollars": 0
         }
 
-# Function to display margin metrics in a consistent format
-def display_margin_metrics(container, title, price, cost, scan, coupon):
-    margin_data = calculate_margin(price, cost, scan, coupon)
-    
-    with container:
-        st.markdown(f"<div class='quadrant-title'>{title}</div>", unsafe_allow_html=True)
-        
-        st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-label'>Price</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-value'>${price:.2f}</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-label'>Gross Margin %</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-value'>{margin_data['gm_percent']:.1f}%</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-label'>Gross Margin $</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-value'>${margin_data['gm_dollars']:.2f}</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-label'>With Coupon %</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-value'>{margin_data['gm_coupon_percent']:.1f}%</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-label'>With Coupon $</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-value'>${margin_data['gm_coupon_dollars']:.2f}</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        return margin_data
+# Calculate margins for Everyday Price
+edlp_margins = calculate_margin(edlp_price, bottle_cost, 0, coupon)
 
-# Calculate margins
+# Add Everyday Price table at the top
+everyday_data = {
+    "Pricing Scenario": ["Everyday Price"],
+    "Price": [f"${edlp_price:.2f}"],
+    "Gross Margin %": [f"{edlp_margins['gm_percent']:.1f}%"],
+    "Gross Margin $": [f"${edlp_margins['gm_dollars']:.2f}"],
+    "With Coupon %": [f"{edlp_margins['gm_coupon_percent']:.1f}%"],
+    "With Coupon $": [f"${edlp_margins['gm_coupon_dollars']:.2f}"]
+}
+
+# Create HTML table for Everyday Price
+ep_table_html = "<table class='pricing-table'><thead><tr>"
+# Add headers
+for col in everyday_data.keys():
+    ep_table_html += f"<th>{col}</th>"
+ep_table_html += "</tr></thead><tbody><tr>"
+# Add the single row
+for col in everyday_data.keys():
+    ep_table_html += f"<td>{everyday_data[col][0]}</td>"
+ep_table_html += "</tr></tbody></table>"
+
+# Display the Everyday Price table
+st.markdown(ep_table_html, unsafe_allow_html=True)
+
+# Calculate margins for other pricing scenarios
 tpr_base_margins = calculate_margin(tpr_base_price, bottle_cost, base_scan, coupon)
 tpr_deep_margins = calculate_margin(tpr_deep_price, bottle_cost, deep_scan, coupon)
 ad_base_margins = calculate_margin(ad_base_price, bottle_cost, base_scan, coupon)
@@ -352,44 +331,36 @@ st.markdown("<h2 style='margin-top: 30px;'>Saved Scan Scenarios</h2>", unsafe_al
 if st.session_state.scan_scenarios.empty:
     st.info("No scan scenarios saved yet. Use the 'Save Scan Scenario' button above to save scenarios.")
 else:
-    # Create columns layout with custom CSS for "Delete" buttons
-    st.markdown("""
-    <style>
-    .delete-button {
-        background-color: #ff6b6b;
-        color: white;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 1.1rem;
-        margin: 5px;
-    }
-    .delete-button:hover {
-        background-color: #e74c3c;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Display scenarios in a table with delete buttons
-    for i, row in st.session_state.scan_scenarios.iterrows():
-        cols = st.columns([10, 1])
-        with cols[0]:
-            # Create a single-row dataframe for display
-            display_df = pd.DataFrame([row])
-            st.dataframe(display_df, use_container_width=True, height=80)
-        
-        with cols[1]:
-            # Add delete button with unique key
-            if st.button("Delete", key=f"delete_{i}", help=f"Delete scenario {i+1}"):
-                st.session_state.delete_scenario_index = i
-                st.experimental_rerun()
-    
     # Handle scenario deletion
     if st.session_state.delete_scenario_index is not None:
         index_to_delete = st.session_state.delete_scenario_index
         st.session_state.scan_scenarios = st.session_state.scan_scenarios.drop(index=index_to_delete).reset_index(drop=True)
         st.session_state.delete_scenario_index = None
+        st.experimental_rerun()
+    
+    # Display scenarios in a table with delete buttons
+    for i, row in st.session_state.scan_scenarios.iterrows():
+        cols = st.columns([6, 1])
+        with cols[0]:
+            # Create a simplified dataframe for display (selected columns only)
+            display_data = {
+                "Brand": row["Brand"],
+                "Size": row["Size"],
+                "Case Cost": row["Case Cost"],
+                "Everyday Price": row["Everyday Shelf Price"],
+                "TPR (Base)": row["TPR Price (Base Scan)"],
+                "TPR (Deep)": row["TPR Price (Deep Scan)"],
+                "Ad (Base)": row["Ad/Feature Price (Base Scan)"],
+                "Ad (Deep)": row["Ad/Feature Price (Deep Scan)"]
+            }
+            display_df = pd.DataFrame([display_data])
+            st.dataframe(display_df, use_container_width=True, height=50)
+        
+        with cols[1]:
+            # Add delete button with unique key
+            if st.button("Delete", key=f"delete_{i}"):
+                st.session_state.delete_scenario_index = i
+                st.experimental_rerun()
     
     # Export button
     if st.button("Export Scan Scenarios to Excel"):
