@@ -16,12 +16,6 @@ import json
 from PIL import Image
 import os
 
-# OpenAI API Configuration - Move the st.warning after set_page_config
-try:
-    OPENAI_API_KEY = st.secrets["api_keys"]["openai"]
-except KeyError:
-    OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE"  # Fallback value
-    st.warning("OpenAI API key is not set in secrets. AI features will not work.")
 
 # Custom CSS for better styling
 st.markdown("""
