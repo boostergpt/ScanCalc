@@ -100,6 +100,9 @@ if 'historical_data' not in st.session_state:
     
 if 'calculated_scans' not in st.session_state:
     st.session_state.calculated_scans = pd.DataFrame()
+    
+if 'user_question' not in st.session_state:
+    st.session_state.user_question = ""
 
 # Add logo and title to the main area with better centering
 st.markdown('<div class="centered-logo">', unsafe_allow_html=True)
@@ -155,6 +158,7 @@ with st.sidebar:
     
     # Optional market input for AI insights
     market = st.text_input("Market (State/Region)", "")
+    
 
 # Helper function to calculate margins (similar to BuildMarginString in VBA)
 def calculate_margin(price, cost, scan, coupon):
@@ -336,7 +340,7 @@ if st.button("Save", key="save_button"):
     
     st.success("Data saved to Calculated Scans!")
 st.markdown('</div>', unsafe_allow_html=True)
-
+    
 # Create tabs for additional features - now without EDLP tab
 tab1, tab2, tab3 = st.tabs(["Calculated Scans", "Historical Data", "AI Insights"])
 
@@ -456,6 +460,7 @@ with tab2:
     else:
         st.info("No historical data saved yet. Use the 'Save Current Data to History' button to start building your dataset.")
 
+
 # GenAI Insights Section
 with tab3:
     st.subheader("💡 AI-Powered Insights & Action Plan")
@@ -464,24 +469,7 @@ with tab3:
     openai.api_key = OPENAI_API_KEY
 
     def generate_insights(brand, size, pricing_data, market=""):
-        
-        try:
-            # Call OpenAI API
-            response = openai.chat.completions.create(
-                model="gpt-4o",  # Using GPT-4o but can be changed to other models
-                messages=[
-                    {"role": "system", "content": "You are an AI assistant specializing in beverage industry pricing and strategy."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7
-            )
-            
-            # Extract the response
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            # Handle errors gracefully
-            return f"Error generating response: {str(e)}\nPlease check your API key and internet connection."
+        """
         Generate insights and action plan using OpenAI API based on calculator inputs
         """
         # Check if API key has been set
@@ -506,15 +494,6 @@ with tab3:
         - TPR with Base Scan: ${pricing_data['tpr_base_price']:.2f} (Margin: {pricing_data['tpr_base_margin']:.1f}%)
         - TPR with Deep Scan: ${pricing_data['tpr_deep_price']:.2f} (Margin: {pricing_data['tpr_deep_margin']:.1f}%)
         - Ad/Feature with Base Scan: ${pricing_data['ad_base_price']:.2f} (Margin: {pricing_data['ad_base_margin']:.1f}%)
-        - Ad/Feature with Deep Scan: ${pricing_data['ad_deep_price']:.2f} (Margin: {pricing_data['ad_deep_margin']:.1f}%)
-        
-        Base Cost: ${pricing_data['bottle_cost']:.2f}
-        
-        Question: {question}
-        
-        Provide a direct, specific answer based on beverage industry expertise. Be helpful, concise, and practical.
-        If the question cannot be answered with the information provided, suggest what additional data would be needed.
-        """ad_base_margin']:.1f}%)
         - Ad/Feature with Deep Scan: ${pricing_data['ad_deep_price']:.2f} (Margin: {pricing_data['ad_deep_margin']:.1f}%)
         
         Base Cost: ${pricing_data['bottle_cost']:.2f}
@@ -616,8 +595,8 @@ with tab3:
                     st.markdown(f"{insights['promotion_strategy']}")
     else:
         st.info("Enter your product details and click 'Generate AI Insights' to receive customized recommendations and market analysis.")
-
-    # Custom Questions Section
+        
+# Custom Questions Section
     st.markdown("---")
     st.subheader("💬 Ask Questions About Your Strategy")
 
@@ -641,4 +620,109 @@ with tab3:
         - Everyday Price: ${pricing_data['everyday_price']:.2f} (Margin: {pricing_data['everyday_margin']:.1f}%)
         - TPR with Base Scan: ${pricing_data['tpr_base_price']:.2f} (Margin: {pricing_data['tpr_base_margin']:.1f}%)
         - TPR with Deep Scan: ${pricing_data['tpr_deep_price']:.2f} (Margin: {pricing_data['tpr_deep_margin']:.1f}%)
-        - Ad/Feature with Base Scan: ${pricing_data['ad_base_price']:.2f} (Margin: {pricing_data['
+        - Ad/Feature with Base Scan: ${pricing_data['ad_base_price']:.2f} (Margin: {pricing_data['ad_base_margin']:.1f}%)
+        - Ad/Feature with Deep Scan: ${pricing_data['ad_deep_price']:.2f} (Margin: {pricing_data['ad_deep_margin']:.1f}%)
+        
+        Base Cost: ${pricing_data['bottle_cost']:.2f}
+        
+        Question: {question}
+        
+        Provide a direct, specific answer based on beverage industry expertise. Be helpful, concise, and practical.
+        If the question cannot be answered with the information provided, suggest what additional data would be needed.
+        """
+        
+        try:
+            # Call OpenAI API
+            response = openai.chat.completions.create(
+                model="gpt-4o",  # Using GPT-4o but can be changed to other models
+                messages=[
+                    {"role": "system", "content": "You are an AI assistant specializing in beverage industry pricing and strategy."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7
+            )
+            
+            # Extract the response
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            # Handle errors gracefully
+            return f"Error generating response: {str(e)}\nPlease check your API key and internet connection."
+
+    # User question input
+    user_question = st.text_area("Enter your specific question about pricing strategy:", 
+                                placeholder="Example: How does my TPR Deep strategy compare to industry standards? What would be the impact of increasing my base scan by $1?",
+                                value=st.session_state.user_question)
+
+    # Button to submit question
+    if st.button("Ask Question", key="ask_question"):
+        # Check if brand and question are provided
+        if not brand:
+            st.warning("Please enter a brand name in the sidebar before asking a question")
+        elif not user_question:
+            st.warning("Please enter a question")
+        else:
+            with st.spinner("Generating response..."):
+                # Gather pricing data to send to the API
+                pricing_data = {
+                    "everyday_price": edlp_price,
+                    "everyday_margin": edlp_margins["gm_percent"],
+                    "tpr_base_price": tpr_base_price,
+                    "tpr_base_margin": tpr_base_margins["gm_percent"],
+                    "tpr_deep_price": tpr_deep_price,
+                    "tpr_deep_margin": tpr_deep_margins["gm_percent"],
+                    "ad_base_price": ad_base_price,
+                    "ad_base_margin": ad_base_margins["gm_percent"],
+                    "ad_deep_price": ad_deep_price,
+                    "ad_deep_margin": ad_deep_margins["gm_percent"],
+                    "bottle_cost": bottle_cost
+                }
+                
+                # Get response to question
+                answer = ask_question(user_question, brand, size, pricing_data, market)
+                
+                # Display answer in a nice box
+                st.markdown("### Answer")
+                st.markdown(f"{answer}")
+                
+                # Show some suggested follow-up questions
+                st.markdown("#### Suggested Follow-up Questions")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("What impact would a 5% price increase have on my margins?"):
+                        st.session_state.user_question = "What impact would a 5% price increase have on my margins?"
+                        st.experimental_rerun()
+                    if st.button("How does my pricing compare to market competitors?"):
+                        st.session_state.user_question = "How does my pricing compare to market competitors?"
+                        st.experimental_rerun()
+                with col2:
+                    if st.button("Which promotion offers the best balance of volume and margin?"):
+                        st.session_state.user_question = "Which promotion offers the best balance of volume and margin?"
+                        st.experimental_rerun()
+                    if st.button("Is my coupon strategy optimal for this product?"):
+                        st.session_state.user_question = "Is my coupon strategy optimal for this product?"
+                        st.experimental_rerun()
+    else:
+        st.info("Enter your question about pricing strategy and click 'Ask Question' to get a customized response from the AI assistant.")
+
+# Add some instructions
+with st.expander("How to use this calculator"):
+    st.write("""
+    1. Enter product information in the sidebar (Brand, Size, Case Cost, etc.)
+    2. Enter promotion information (Base Scan, Deep Scan, Coupon)
+    3. Enter pricing information for each scenario
+    4. The calculator will automatically show the margin metrics for each scenario
+    5. Click the 'Save' button to save current data to the Calculated Scans tab
+    6. Use the 'Save Current Data to History' button in the Historical Data tab to keep a record of previous calculations
+    7. Use the AI Insights tab to get customized recommendations and answer specific questions
+    
+    **Key Terminology:**
+    - **Base Scan**: Standard scan amount applied to the product
+    - **Deep Scan**: Enhanced scan amount for deeper promotions
+    - **TPR**: Temporary Price Reduction
+    - **EDLP**: Everyday Low Price
+    - **GM**: Gross Margin
+    """)
+
+# Note about API key for users
+st.caption("Note: AI features require an OpenAI API key. Make sure to replace the placeholder in the code with your actual key.")
