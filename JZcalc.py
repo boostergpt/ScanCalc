@@ -348,7 +348,7 @@ if st.button("Save", key="save_button"):
 st.markdown('</div>', unsafe_allow_html=True)
     
 # Create tabs for additional features - now without EDLP tab
-tab1, tab2, tab3 = st.tabs(["Calculated Scans", "Historical Data", "AI Insights"])
+tab1, tab2 = st.tabs(["Calculated Scans", "Historical Data"])
 
 with tab1:
     st.subheader("Calculated Scans")
