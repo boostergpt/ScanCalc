@@ -10,7 +10,13 @@ import os
 
 # OpenAI API Configuration
 # IMPORTANT: Replace this with your actual API key when running the app
-OPENAI_API_KEY = "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"  # You'll replace this when running
+# OpenAI API Configuration
+try:
+    OPENAI_API_KEY = st.secrets["api_keys"]["openai"]
+except KeyError:
+    OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE"  # Fallback value
+    st.warning("OpenAI API key is not set in secrets. AI features will not work.")
+
 
 # Set page config
 st.set_page_config(
