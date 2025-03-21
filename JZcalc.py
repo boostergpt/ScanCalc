@@ -443,10 +443,13 @@ else:
                                                    'Everyday Shelf Price', 'TPR Price (Base Scan)', 
                                                    'TPR Price (Deep Scan)', 'Ad/Feature Price (Base Scan)', 
                                                    'Ad/Feature Price (Deep Scan)']]
+<<<<<<< HEAD
 >>>>>>> parent of 0147634 (Update JZcalc.py)
         
         # Create a copy of the dataframe to display and edit
         edit_df = st.session_state.scan_scenarios.copy()
+=======
+>>>>>>> parent of 0147634 (Update JZcalc.py)
         
         # Display checkboxes for deletion with unique keys
         checkboxes = []
