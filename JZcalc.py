@@ -158,31 +158,28 @@ st.markdown("""
         background-color: #d4edda !important;
     }
     
-    /* Excel-like Scenarios table styling with alternating blue/white colors */
+    /* Make scenarios table match the pricing table styling */
     .scenarios-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 1.2rem;
+        font-size: 1.4rem;
         margin-bottom: 20px;
         font-family: 'Arial', sans-serif !important;
-        border: 1px solid #bdd7ee; /* Excel-like border */
-        box-shadow: 0 0 5px rgba(0,0,0,0.1); /* Subtle shadow for depth */
     }
     .scenarios-table th {
-        background-color: #4472c4; /* Excel blue header */
-        color: white;
-        padding: 10px;
+        background-color: #f0f2f6;
+        padding: 12px;
         text-align: center;
         font-weight: bold;
-        border: 1px solid #bdd7ee;
+        border: 1px solid #ddd;
         position: sticky;
         top: 0;
         z-index: 10;
         font-family: 'Arial', sans-serif !important;
     }
     .scenarios-table td {
-        padding: 8px;
-        border: 1px solid #bdd7ee; /* Excel-like cell borders */
+        padding: 12px;
+        border: 1px solid #ddd;
         text-align: center;
         font-family: 'Arial', sans-serif !important;
     }
@@ -203,20 +200,11 @@ st.markdown("""
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    /* Strong grid lines for Excel look */
-    .scenarios-table th, 
-    .scenarios-table td {
-        border: 1px solid #bdd7ee;
-    }
-    /* Clear alternating row colors */
-    .scenarios-table tr:nth-child(odd) {
-        background-color: #ffffff; /* White rows */
-    }
     .scenarios-table tr:nth-child(even) {
-        background-color: #deebf7; /* Light blue rows - Excel style */
+        background-color: #f8f9fa;
     }
     .scenarios-table tr:hover {
-        background-color: #c5e0b4; /* Excel-like selection color */
+        background-color: #e9ecef;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -415,8 +403,8 @@ else:
                           'Ad/Feature Price (Base Scan)', 'Ad GM % (Base Scan)', 'Ad GM $ (Base Scan)',
                           'Ad/Feature Price (Deep Scan)', 'Ad GM % (Deep Scan)', 'Ad GM $ (Deep Scan)'])
     
-    # Create a simple Excel-like table with stronger gridlines and alternating colors
-    table_html = "<div style='overflow-x: auto;'><table class='scenarios-table' cellspacing='0' cellpadding='0'><thead><tr>"
+    # Create a table that matches the pricing table styling
+    table_html = "<div style='overflow-x: auto;'><table class='scenarios-table'><thead><tr>"
     
     # Add column headers
     for col in display_columns:
