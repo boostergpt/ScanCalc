@@ -130,6 +130,9 @@ st.markdown("""
     .delete-button:hover {
         background-color: #e74c3c;
     }
+    .everyday-row {
+        background-color: #d4edda !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -138,8 +141,8 @@ if 'scan_scenarios' not in st.session_state:
     st.session_state.scan_scenarios = pd.DataFrame()
     
 # For managing scenario deletion
-if 'delete_scenario_index' not in st.session_state:
-    st.session_state.delete_scenario_index = None
+if 'delete_scenario_indices' not in st.session_state:
+    st.session_state.delete_scenario_indices = []
 
 # Add logo and title to the main area
 try:
@@ -154,16 +157,14 @@ st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_
 
 # Create sidebar for inputs
 with st.sidebar:
-    st.subheader("Product Information")
-    
     # Brand and Size inputs
+    st.subheader("Brand and Size")
     brand = st.text_input("Brand")
     size_options = ["1.75L", "1L", "750mL", "375mL", "355mL", "200mL", "100mL", "50mL"]
     size = st.selectbox("Size", size_options)
     
-    st.subheader("Cost Information")
-    
     # Cost inputs
+    st.subheader("Cost Details")
     case_cost = st.number_input("Case Cost ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     bottles_per_case = st.number_input("# Bottles per Case", min_value=1, value=12, step=1)
     
@@ -177,8 +178,8 @@ with st.sidebar:
     
     # Scan and coupon inputs
     st.subheader("Promotions")
-    base_scan = st.number_input("Base Scan ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-    deep_scan = st.number_input("Deep Scan ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+    base_scan = st.number_input("Base Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
+    deep_scan = st.number_input("Deep Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
     coupon = st.number_input("Coupon ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     
     # Pricing inputs
@@ -189,8 +190,8 @@ with st.sidebar:
     ad_base_price = st.number_input("Ad/Feature Base Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     ad_deep_price = st.number_input("Ad/Feature Deep Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     
-    # Optional market input
-    market = st.text_input("Market (State/Region)", "")
+    # Optional customer/state input
+    customer_state = st.text_input("Customer / State", "")
 
 # Helper function to calculate margins (similar to BuildMarginString in VBA)
 def calculate_margin(price, cost, scan, coupon):
@@ -218,48 +219,28 @@ def calculate_margin(price, cost, scan, coupon):
 # Calculate margins for Everyday Price
 edlp_margins = calculate_margin(edlp_price, bottle_cost, 0, coupon)
 
-# Add Everyday Price table at the top
-everyday_data = {
-    "Pricing Scenario": ["Everyday Price"],
-    "Price": [f"${edlp_price:.2f}"],
-    "Gross Margin %": [f"{edlp_margins['gm_percent']:.1f}%"],
-    "Gross Margin $": [f"${edlp_margins['gm_dollars']:.2f}"],
-    "With Coupon %": [f"{edlp_margins['gm_coupon_percent']:.1f}%"],
-    "With Coupon $": [f"${edlp_margins['gm_coupon_dollars']:.2f}"]
-}
-
-# Create HTML table for Everyday Price
-ep_table_html = "<table class='pricing-table'><thead><tr>"
-# Add headers
-for col in everyday_data.keys():
-    ep_table_html += f"<th>{col}</th>"
-ep_table_html += "</tr></thead><tbody><tr>"
-# Add the single row
-for col in everyday_data.keys():
-    ep_table_html += f"<td>{everyday_data[col][0]}</td>"
-ep_table_html += "</tr></tbody></table>"
-
-# Display the Everyday Price table
-st.markdown(ep_table_html, unsafe_allow_html=True)
-
 # Calculate margins for other pricing scenarios
 tpr_base_margins = calculate_margin(tpr_base_price, bottle_cost, base_scan, coupon)
 tpr_deep_margins = calculate_margin(tpr_deep_price, bottle_cost, deep_scan, coupon)
 ad_base_margins = calculate_margin(ad_base_price, bottle_cost, base_scan, coupon)
 ad_deep_margins = calculate_margin(ad_deep_price, bottle_cost, deep_scan, coupon)
 
-# Create data for the pricing comparison table
+# Create data for the pricing comparison table (including Everyday Price)
 pricing_data = {
-    "Pricing Scenario": ["TPR (Base Scan)", "TPR (Deep Scan)", "Ad/Feature (Base Scan)", "Ad/Feature (Deep Scan)"],
-    "Price": [f"${tpr_base_price:.2f}", f"${tpr_deep_price:.2f}", f"${ad_base_price:.2f}", f"${ad_deep_price:.2f}"],
-    "Gross Margin %": [f"{tpr_base_margins['gm_percent']:.1f}%", f"{tpr_deep_margins['gm_percent']:.1f}%", 
-                      f"{ad_base_margins['gm_percent']:.1f}%", f"{ad_deep_margins['gm_percent']:.1f}%"],
-    "Gross Margin $": [f"${tpr_base_margins['gm_dollars']:.2f}", f"${tpr_deep_margins['gm_dollars']:.2f}", 
-                      f"${ad_base_margins['gm_dollars']:.2f}", f"${ad_deep_margins['gm_dollars']:.2f}"],
-    "With Coupon %": [f"{tpr_base_margins['gm_coupon_percent']:.1f}%", f"{tpr_deep_margins['gm_coupon_percent']:.1f}%", 
-                     f"{ad_base_margins['gm_coupon_percent']:.1f}%", f"{ad_deep_margins['gm_coupon_percent']:.1f}%"],
-    "With Coupon $": [f"${tpr_base_margins['gm_coupon_dollars']:.2f}", f"${tpr_deep_margins['gm_coupon_dollars']:.2f}", 
-                     f"${ad_base_margins['gm_coupon_dollars']:.2f}", f"${ad_deep_margins['gm_coupon_dollars']:.2f}"]
+    "Pricing Scenario": ["Everyday Price", "TPR (Base Scan)", "TPR (Deep Scan)", "Ad/Feature (Base Scan)", "Ad/Feature (Deep Scan)"],
+    "Price": [f"${edlp_price:.2f}", f"${tpr_base_price:.2f}", f"${tpr_deep_price:.2f}", f"${ad_base_price:.2f}", f"${ad_deep_price:.2f}"],
+    "Gross Margin %": [f"{edlp_margins['gm_percent']:.1f}%", f"{tpr_base_margins['gm_percent']:.1f}%", 
+                      f"{tpr_deep_margins['gm_percent']:.1f}%", f"{ad_base_margins['gm_percent']:.1f}%", 
+                      f"{ad_deep_margins['gm_percent']:.1f}%"],
+    "Gross Margin $": [f"${edlp_margins['gm_dollars']:.2f}", f"${tpr_base_margins['gm_dollars']:.2f}", 
+                      f"${tpr_deep_margins['gm_dollars']:.2f}", f"${ad_base_margins['gm_dollars']:.2f}", 
+                      f"${ad_deep_margins['gm_dollars']:.2f}"],
+    "With Coupon %": [f"{edlp_margins['gm_coupon_percent']:.1f}%", f"{tpr_base_margins['gm_coupon_percent']:.1f}%", 
+                     f"{tpr_deep_margins['gm_coupon_percent']:.1f}%", f"{ad_base_margins['gm_coupon_percent']:.1f}%", 
+                     f"{ad_deep_margins['gm_coupon_percent']:.1f}%"],
+    "With Coupon $": [f"${edlp_margins['gm_coupon_dollars']:.2f}", f"${tpr_base_margins['gm_coupon_dollars']:.2f}", 
+                     f"${tpr_deep_margins['gm_coupon_dollars']:.2f}", f"${ad_base_margins['gm_coupon_dollars']:.2f}", 
+                     f"${ad_deep_margins['gm_coupon_dollars']:.2f}"]
 }
 
 # Create the HTML table
@@ -271,7 +252,12 @@ table_html += "</tr></thead><tbody>"
 
 # Add rows
 for i in range(len(pricing_data["Pricing Scenario"])):
-    table_html += "<tr>"
+    # Add special highlighting class for Everyday Price row
+    if i == 0:  # Everyday Price is the first row
+        table_html += "<tr class='everyday-row'>"
+    else:
+        table_html += "<tr>"
+    
     for col in pricing_data.keys():
         table_html += f"<td>{pricing_data[col][i]}</td>"
     table_html += "</tr>"
@@ -292,6 +278,7 @@ if st.button("Save Scan Scenario"):
         "Base Scan": base_scan,
         "Deep Scan": deep_scan,
         "Coupon": coupon,
+        "Customer/State": customer_state,
         "Everyday Shelf Price": edlp_price,
         "Everyday GM %": edlp_margins["gm_percent"],
         "Everyday GM $": edlp_margins["gm_dollars"],
@@ -331,36 +318,44 @@ st.markdown("<h2 style='margin-top: 30px;'>Saved Scan Scenarios</h2>", unsafe_al
 if st.session_state.scan_scenarios.empty:
     st.info("No scan scenarios saved yet. Use the 'Save Scan Scenario' button above to save scenarios.")
 else:
-    # Handle scenario deletion
-    if st.session_state.delete_scenario_index is not None:
-        index_to_delete = st.session_state.delete_scenario_index
-        st.session_state.scan_scenarios = st.session_state.scan_scenarios.drop(index=index_to_delete).reset_index(drop=True)
-        st.session_state.delete_scenario_index = None
+    # Process deletion of scenarios
+    if st.button("Delete Selected Scenarios") and st.session_state.delete_scenario_indices:
+        st.session_state.scan_scenarios = st.session_state.scan_scenarios.drop(index=st.session_state.delete_scenario_indices).reset_index(drop=True)
+        st.session_state.delete_scenario_indices = []
+        st.success("Selected scenarios deleted successfully!")
         st.experimental_rerun()
     
-    # Display scenarios in a table with delete buttons
-    for i, row in st.session_state.scan_scenarios.iterrows():
-        cols = st.columns([6, 1])
-        with cols[0]:
-            # Create a simplified dataframe for display (selected columns only)
-            display_data = {
-                "Brand": row["Brand"],
-                "Size": row["Size"],
-                "Case Cost": row["Case Cost"],
-                "Everyday Price": row["Everyday Shelf Price"],
-                "TPR (Base)": row["TPR Price (Base Scan)"],
-                "TPR (Deep)": row["TPR Price (Deep Scan)"],
-                "Ad (Base)": row["Ad/Feature Price (Base Scan)"],
-                "Ad (Deep)": row["Ad/Feature Price (Deep Scan)"]
-            }
-            display_df = pd.DataFrame([display_data])
-            st.dataframe(display_df, use_container_width=True, height=50)
+    # Create a single table with checkboxes for deletion
+    # Use a form to better handle multiple selections
+    with st.form(key='scenarios_form'):
+        # Create display dataframe with selected columns
+        display_df = st.session_state.scan_scenarios[['Brand', 'Size', 'Case Cost', 'Customer/State', 
+                                                   'Everyday Shelf Price', 'TPR Price (Base Scan)', 
+                                                   'TPR Price (Deep Scan)', 'Ad/Feature Price (Base Scan)', 
+                                                   'Ad/Feature Price (Deep Scan)']]
         
-        with cols[1]:
-            # Add delete button with unique key
-            if st.button("Delete", key=f"delete_{i}"):
-                st.session_state.delete_scenario_index = i
-                st.experimental_rerun()
+        # Add checkboxes for deletion
+        for i in range(len(display_df)):
+            col1, col2 = st.columns([0.1, 0.9])
+            with col1:
+                if st.checkbox(f"Select", key=f"select_{i}"):
+                    if i not in st.session_state.delete_scenario_indices:
+                        st.session_state.delete_scenario_indices.append(i)
+                else:
+                    if i in st.session_state.delete_scenario_indices:
+                        st.session_state.delete_scenario_indices.remove(i)
+            
+            with col2:
+                # Display scenario data
+                st.write(f"**Brand:** {display_df.iloc[i]['Brand']} | **Size:** {display_df.iloc[i]['Size']} | "
+                        f"**Customer/State:** {display_df.iloc[i]['Customer/State']} | "
+                        f"**Everyday Price:** ${display_df.iloc[i]['Everyday Shelf Price']:.2f} | "
+                        f"**TPR (Base):** ${display_df.iloc[i]['TPR Price (Base Scan)']:.2f} | "
+                        f"**TPR (Deep):** ${display_df.iloc[i]['TPR Price (Deep Scan)']:.2f}")
+            
+            st.markdown("---")
+        
+        st.form_submit_button("Refresh Selection")
     
     # Export button
     if st.button("Export Scan Scenarios to Excel"):
@@ -404,5 +399,6 @@ else:
     # Clear button
     if st.button("Clear All Scan Scenarios"):
         st.session_state.scan_scenarios = pd.DataFrame()
+        st.session_state.delete_scenario_indices = []
         st.success("All scan scenarios cleared!")
         st.experimental_rerun()
