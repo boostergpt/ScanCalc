@@ -158,21 +158,22 @@ st.markdown("""
         background-color: #d4edda !important;
     }
     
-    /* Scenarios table styling with alternating colors */
+    /* Excel-like Scenarios table styling with alternating blue/white colors */
     .scenarios-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 1.2rem;
         margin-bottom: 20px;
         font-family: 'Arial', sans-serif !important;
+        border: 1px solid #bdd7ee; /* Excel-like border */
     }
     .scenarios-table th {
-        background-color: #3c6e71;
+        background-color: #4472c4; /* Excel blue header */
         color: white;
         padding: 10px;
         text-align: center;
         font-weight: bold;
-        border: 1px solid #ddd;
+        border: 1px solid #bdd7ee;
         position: sticky;
         top: 0;
         z-index: 10;
@@ -180,22 +181,23 @@ st.markdown("""
     }
     .scenarios-table td {
         padding: 8px;
-        border: 1px solid #ddd;
+        border: 1px solid #bdd7ee; /* Excel-like cell borders */
         text-align: center;
         font-family: 'Arial', sans-serif !important;
     }
     .scenarios-table tr:nth-child(odd) {
-        background-color: #ffffff;
+        background-color: #ffffff; /* White rows */
     }
     .scenarios-table tr:nth-child(even) {
-        background-color: #e0e0e0;
+        background-color: #deebf7; /* Light blue rows - Excel style */
     }
     .scenarios-table tr:hover {
-        background-color: #d1e7dd;
+        background-color: #c5e0b4; /* Excel-like selection color */
     }
     .checkbox-col {
         width: 50px;
         text-align: center;
+        background-color: #f7f7f7; /* Slight gray for checkbox column */
     }
 </style>
 """, unsafe_allow_html=True)
