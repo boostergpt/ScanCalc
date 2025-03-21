@@ -166,46 +166,6 @@ st.markdown("""
         margin-bottom: 20px;
         font-family: 'Arial', sans-serif !important;
     }
-    .scenarios-table th {
-        background-color: #f0f2f6;
-        padding: 12px;
-        text-align: center;
-        font-weight: bold;
-        border: 1px solid #ddd;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        font-family: 'Arial', sans-serif !important;
-    }
-    .scenarios-table td {
-        padding: 12px;
-        border: 1px solid #ddd;
-        text-align: center;
-        font-family: 'Arial', sans-serif !important;
-    }
-    /* Brand column styling */
-    .scenarios-table th:nth-child(1),
-    .scenarios-table td:nth-child(1) {
-        min-width: 150px;
-        text-align: left;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    /* Size column styling */
-    .scenarios-table th:nth-child(2),
-    .scenarios-table td:nth-child(2) {
-        min-width: 70px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .scenarios-table tr:nth-child(even) {
-        background-color: #f8f9fa;
-    }
-    .scenarios-table tr:hover {
-        background-color: #e9ecef;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -391,60 +351,8 @@ else:
     if 'Customer/State' not in st.session_state.scan_scenarios.columns and 'Market' in st.session_state.scan_scenarios.columns:
         st.session_state.scan_scenarios = st.session_state.scan_scenarios.rename(columns={'Market': 'Customer/State'})
     
-    # Create display dataframe with selected columns (with fallback columns if needed)
-    display_columns = ['Brand', 'Size', 'Case Cost', 'Bottle Cost']
-    # Add Customer/State if it exists, otherwise skip it
-    if 'Customer/State' in st.session_state.scan_scenarios.columns:
-        display_columns.append('Customer/State')
-    # Add the pricing columns
-    display_columns.extend(['Everyday Shelf Price', 'Everyday GM %', 'Everyday GM $', 
-                          'TPR Price (Base Scan)', 'TPR GM % (Base Scan)', 'TPR GM $ (Base Scan)',
-                          'TPR Price (Deep Scan)', 'TPR GM % (Deep Scan)', 'TPR GM $ (Deep Scan)',
-                          'Ad/Feature Price (Base Scan)', 'Ad GM % (Base Scan)', 'Ad GM $ (Base Scan)',
-                          'Ad/Feature Price (Deep Scan)', 'Ad GM % (Deep Scan)', 'Ad GM $ (Deep Scan)'])
-    
-    # Create a table that matches the pricing table styling
-    table_html = "<div style='overflow-x: auto;'><table class='scenarios-table'><thead><tr>"
-    
-    # Add column headers
-    for col in display_columns:
-        table_html += f"<th>{col}</th>"
-    table_html += "</tr></thead><tbody>"
-    
-    # Add rows with data
-    for i in range(len(st.session_state.scan_scenarios)):
-        # Row class is handled by CSS for alternating colors
-        table_html += "<tr>"
-        
-        # Add data columns
-        for j, col in enumerate(display_columns):
-            value = st.session_state.scan_scenarios.iloc[i][col]
-            
-            # Format values based on type
-            if isinstance(value, (int, float)):
-                if "Price" in col or "Cost" in col or "Scan" in col or "GM $" in col:
-                    formatted_value = f"${value:.2f}"
-                elif "GM %" in col:
-                    formatted_value = f"{value:.1f}%"
-                else:
-                    formatted_value = f"{value}"
-            else:
-                formatted_value = f"{value}"
-            
-            # Add cell with appropriate class based on column
-            if j == 0:  # Brand column
-                table_html += f"<td title='{formatted_value}'>{formatted_value}</td>"
-            elif j == 1:  # Size column
-                table_html += f"<td title='{formatted_value}'>{formatted_value}</td>"
-            else:
-                table_html += f"<td>{formatted_value}</td>"
-        
-        table_html += "</tr>"
-    
-    table_html += "</tbody></table></div>"
-    
-    # Display the table
-    st.components.v1.html(table_html, height=400, scrolling=True)
+    # Display the scenarios using Streamlit's dataframe
+    st.dataframe(st.session_state.scan_scenarios)
     
     # Export button
     if st.button("Export Scan Scenarios to Excel"):
