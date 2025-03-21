@@ -8,7 +8,7 @@ import os
 
 # Set page config
 st.set_page_config(
-    page_title="Margin Calculator",
+    page_title="Margin Calculator MAYBE",
     page_icon="🧮",
     layout="wide"
 )
