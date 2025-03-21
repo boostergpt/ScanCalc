@@ -13,16 +13,52 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for better styling and larger fonts
+# Custom CSS for better styling and uniform fonts
 st.markdown("""
 <style>
+    /* Global font settings for uniformity */
+    * {
+        font-family: 'Arial', sans-serif !important;
+    }
+    
+    /* Streamlit elements */
     .main {
         padding: 2rem;
     }
     .stButton button {
         width: 100%;
         font-size: 1.2rem;
+        font-family: 'Arial', sans-serif !important;
     }
+    .stTextInput input, .stNumberInput input, .stSelectbox > div > div[role="listbox"] {
+        font-size: 1.2rem !important;
+        font-family: 'Arial', sans-serif !important;
+    }
+    .stTextInput label, .stNumberInput label, .stSelectbox label {
+        font-size: 1.2rem !important;
+        font-weight: 500 !important;
+        font-family: 'Arial', sans-serif !important;
+    }
+    .stTab [data-baseweb="tab"] {
+        font-size: 1.2rem !important;
+        font-family: 'Arial', sans-serif !important;
+    }
+    .stTab [data-baseweb="tab-list"] {
+        gap: 1rem;
+    }
+    .stSubheader {
+        font-size: 1.5rem !important;
+        font-family: 'Arial', sans-serif !important;
+    }
+    p, div, span, button, a {
+        font-size: 1.2rem;
+        font-family: 'Arial', sans-serif !important;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Arial', sans-serif !important;
+    }
+    
+    /* Component styling */
     .metric-container {
         background-color: #f0f2f6;
         border-radius: 10px;
@@ -65,36 +101,21 @@ st.markdown("""
         margin-right: auto;
         text-align: center;
     }
-    .stTextInput input, .stNumberInput input, .stSelectbox > div > div[role="listbox"] {
-        font-size: 1.2rem !important;
-    }
-    .stTextInput label, .stNumberInput label, .stSelectbox label {
-        font-size: 1.2rem !important;
-        font-weight: 500 !important;
-    }
-    .stTab [data-baseweb="tab"] {
-        font-size: 1.2rem !important;
-    }
-    .stTab [data-baseweb="tab-list"] {
-        gap: 1rem;
-    }
-    .stSubheader {
-        font-size: 1.5rem !important;
-    }
-    p, div {
-        font-size: 1.2rem;
-    }
     .sidebar .sidebar-content {
         padding: 2rem 1rem;
     }
     button[data-baseweb="tab"] {
         font-size: 1.3rem !important;
+        font-family: 'Arial', sans-serif !important;
     }
+    
+    /* Pricing table styling */
     .pricing-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 1.4rem;
         margin-bottom: 20px;
+        font-family: 'Arial', sans-serif !important;
     }
     .pricing-table th {
         background-color: #f0f2f6;
@@ -102,11 +123,13 @@ st.markdown("""
         text-align: center;
         font-weight: bold;
         border: 1px solid #ddd;
+        font-family: 'Arial', sans-serif !important;
     }
     .pricing-table td {
         padding: 12px;
         border: 1px solid #ddd;
         text-align: center;
+        font-family: 'Arial', sans-serif !important;
     }
     .pricing-table td:first-child {
         text-align: left;
@@ -126,6 +149,7 @@ st.markdown("""
         cursor: pointer;
         font-size: 1.1rem;
         margin: 5px;
+        font-family: 'Arial', sans-serif !important;
     }
     .delete-button:hover {
         background-color: #e74c3c;
@@ -133,15 +157,18 @@ st.markdown("""
     .everyday-row {
         background-color: #d4edda !important;
     }
-    /* New CSS for scenarios table */
+    
+    /* Scenarios table styling with alternating colors */
     .scenarios-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 1.2rem;
         margin-bottom: 20px;
+        font-family: 'Arial', sans-serif !important;
     }
     .scenarios-table th {
-        background-color: #f0f2f6;
+        background-color: #3c6e71;
+        color: white;
         padding: 10px;
         text-align: center;
         font-weight: bold;
@@ -149,17 +176,22 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 10;
+        font-family: 'Arial', sans-serif !important;
     }
     .scenarios-table td {
         padding: 8px;
         border: 1px solid #ddd;
         text-align: center;
+        font-family: 'Arial', sans-serif !important;
+    }
+    .scenarios-table tr:nth-child(odd) {
+        background-color: #ffffff;
     }
     .scenarios-table tr:nth-child(even) {
-        background-color: #f8f9fa;
+        background-color: #e0e0e0;
     }
     .scenarios-table tr:hover {
-        background-color: #e9ecef;
+        background-color: #d1e7dd;
     }
     .checkbox-col {
         width: 50px;
@@ -369,7 +401,7 @@ else:
         st.success("Selected scenarios deleted successfully!")
         st.experimental_rerun()
     
-    # Create Excel-like table with checkboxes
+    # Create Excel-like table with checkboxes and alternating row colors
     table_html = "<div style='overflow-x: auto;'><table class='scenarios-table'><thead><tr>"
     # Add checkbox column header
     table_html += "<th class='checkbox-col'>Select</th>"
@@ -381,6 +413,7 @@ else:
     
     # Add rows with data
     for i in range(len(st.session_state.scan_scenarios)):
+        # Row class is handled by CSS for alternating colors
         table_html += "<tr>"
         
         # Add checkbox column
