@@ -405,7 +405,7 @@ else:
     if 'Customer/State' in st.session_state.scan_scenarios.columns:
         display_columns.append('Customer/State')
     # Add the pricing columns
-    display_columns.extend(['Everyday Shelf Price', 'Everyday GM %', 'Everyday GM , 
+    display_columns.extend(['Everyday Shelf Price', 'Everyday GM %', 'Everyday GM $', 
                           'TPR Price (Base Scan)', 'TPR GM % (Base Scan)', 'TPR GM $ (Base Scan)',
                           'TPR Price (Deep Scan)', 'TPR GM % (Deep Scan)', 'TPR GM $ (Deep Scan)',
                           'Ad/Feature Price (Base Scan)', 'Ad GM % (Base Scan)', 'Ad GM $ (Base Scan)',
