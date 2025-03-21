@@ -133,6 +133,38 @@ st.markdown("""
     .everyday-row {
         background-color: #d4edda !important;
     }
+    /* New CSS for scenarios table */
+    .scenarios-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+    }
+    .scenarios-table th {
+        background-color: #f0f2f6;
+        padding: 10px;
+        text-align: center;
+        font-weight: bold;
+        border: 1px solid #ddd;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .scenarios-table td {
+        padding: 8px;
+        border: 1px solid #ddd;
+        text-align: center;
+    }
+    .scenarios-table tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+    .scenarios-table tr:hover {
+        background-color: #e9ecef;
+    }
+    .checkbox-col {
+        width: 50px;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -314,60 +346,113 @@ st.markdown("<h2 style='margin-top: 30px;'>Saved Scan Scenarios</h2>", unsafe_al
 if st.session_state.scan_scenarios.empty:
     st.info("No scan scenarios saved yet. Use the 'Save Scan Scenario' button above to save scenarios.")
 else:
-    # Process deletion of scenarios
+    # Handle column name compatibility between "Market" and "Customer/State"
+    if 'Customer/State' not in st.session_state.scan_scenarios.columns and 'Market' in st.session_state.scan_scenarios.columns:
+        st.session_state.scan_scenarios = st.session_state.scan_scenarios.rename(columns={'Market': 'Customer/State'})
+    
+    # Create display dataframe with selected columns (with fallback columns if needed)
+    display_columns = ['Brand', 'Size', 'Case Cost', 'Bottle Cost']
+    # Add Customer/State if it exists, otherwise skip it
+    if 'Customer/State' in st.session_state.scan_scenarios.columns:
+        display_columns.append('Customer/State')
+    # Add the pricing columns
+    display_columns.extend(['Everyday Shelf Price', 'Everyday GM %', 'Everyday GM $', 
+                          'TPR Price (Base Scan)', 'TPR GM % (Base Scan)', 'TPR GM $ (Base Scan)',
+                          'TPR Price (Deep Scan)', 'TPR GM % (Deep Scan)', 'TPR GM $ (Deep Scan)',
+                          'Ad/Feature Price (Base Scan)', 'Ad GM % (Base Scan)', 'Ad GM $ (Base Scan)',
+                          'Ad/Feature Price (Deep Scan)', 'Ad GM % (Deep Scan)', 'Ad GM $ (Deep Scan)'])
+    
+    # Process deletion of scenarios if button was clicked
     if st.button("Delete Selected Scenarios") and st.session_state.delete_scenario_indices:
         st.session_state.scan_scenarios = st.session_state.scan_scenarios.drop(index=st.session_state.delete_scenario_indices).reset_index(drop=True)
         st.session_state.delete_scenario_indices = []
         st.success("Selected scenarios deleted successfully!")
         st.experimental_rerun()
     
-    # Create a single table with checkboxes for deletion
-    # Use a form to better handle multiple selections
-    with st.form(key='scenarios_form'):
-        # Handle column name compatibility between "Market" and "Customer/State"
-        if 'Customer/State' not in st.session_state.scan_scenarios.columns and 'Market' in st.session_state.scan_scenarios.columns:
-            st.session_state.scan_scenarios = st.session_state.scan_scenarios.rename(columns={'Market': 'Customer/State'})
+    # Create Excel-like table with checkboxes
+    table_html = "<div style='overflow-x: auto;'><table class='scenarios-table'><thead><tr>"
+    # Add checkbox column header
+    table_html += "<th class='checkbox-col'>Select</th>"
+    
+    # Add other column headers
+    for col in display_columns:
+        table_html += f"<th>{col}</th>"
+    table_html += "</tr></thead><tbody>"
+    
+    # Add rows with data
+    for i in range(len(st.session_state.scan_scenarios)):
+        table_html += "<tr>"
         
-        # Create display dataframe with selected columns (with fallback columns if needed)
-        display_columns = ['Brand', 'Size', 'Case Cost']
-        # Add Customer/State if it exists, otherwise skip it
-        if 'Customer/State' in st.session_state.scan_scenarios.columns:
-            display_columns.append('Customer/State')
-        # Add the pricing columns
-        display_columns.extend(['Everyday Shelf Price', 'TPR Price (Base Scan)', 
-                              'TPR Price (Deep Scan)', 'Ad/Feature Price (Base Scan)', 
-                              'Ad/Feature Price (Deep Scan)'])
-                              
-        display_df = st.session_state.scan_scenarios[display_columns]
+        # Add checkbox column
+        checkbox_id = f"checkbox_{i}"
+        is_checked = "checked" if i in st.session_state.delete_scenario_indices else ""
+        table_html += f"<td class='checkbox-col'><input type='checkbox' id='{checkbox_id}' {is_checked}></td>"
         
-        # Add checkboxes for deletion
-        for i in range(len(display_df)):
-            col1, col2 = st.columns([0.1, 0.9])
-            with col1:
-                if st.checkbox(f"Select", key=f"select_{i}"):
-                    if i not in st.session_state.delete_scenario_indices:
-                        st.session_state.delete_scenario_indices.append(i)
+        # Add data columns
+        for col in display_columns:
+            value = st.session_state.scan_scenarios.iloc[i][col]
+            
+            # Format values based on type
+            if isinstance(value, (int, float)):
+                if "Price" in col or "Cost" in col or "Scan" in col or "GM $" in col:
+                    formatted_value = f"${value:.2f}"
+                elif "GM %" in col:
+                    formatted_value = f"{value:.1f}%"
                 else:
-                    if i in st.session_state.delete_scenario_indices:
-                        st.session_state.delete_scenario_indices.remove(i)
-            
-            with col2:
-                # Display scenario data
-                display_text = f"**Brand:** {display_df.iloc[i]['Brand']} | **Size:** {display_df.iloc[i]['Size']} | "
+                    formatted_value = f"{value}"
+            else:
+                formatted_value = f"{value}"
                 
-                # Add Customer/State if it exists
-                if 'Customer/State' in display_df.columns:
-                    display_text += f"**Customer/State:** {display_df.iloc[i]['Customer/State']} | "
-                
-                display_text += (f"**Everyday Price:** ${display_df.iloc[i]['Everyday Shelf Price']:.2f} | "
-                               f"**TPR (Base):** ${display_df.iloc[i]['TPR Price (Base Scan)']:.2f} | "
-                               f"**TPR (Deep):** ${display_df.iloc[i]['TPR Price (Deep Scan)']:.2f}")
-                
-                st.write(display_text)
-            
-            st.markdown("---")
+            table_html += f"<td>{formatted_value}</td>"
         
-        st.form_submit_button("Refresh Selection")
+        table_html += "</tr>"
+    
+    table_html += "</tbody></table></div>"
+    
+    # JavaScript to handle checkbox selections
+    checkbox_script = """
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="checkbox_"]');
+        checkboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const index = this.id.split('_')[1];
+                if (this.checked) {
+                    // Add to selected indices
+                    window.parent.postMessage({
+                        'type': 'streamlit:setComponentValue',
+                        'value': index
+                    }, '*');
+                } else {
+                    // Remove from selected indices
+                    window.parent.postMessage({
+                        'type': 'streamlit:removeComponentValue',
+                        'value': index
+                    }, '*');
+                }
+            });
+        });
+    });
+    </script>
+    """
+    
+    # Display the table
+    st.components.v1.html(table_html + checkbox_script, height=400, scrolling=True)
+    
+    # Create a form to collect checkbox states
+    with st.form("scenario_selection_form"):
+        # Create hidden checkboxes to store state
+        for i in range(len(st.session_state.scan_scenarios)):
+            # These are invisible but maintain state
+            if st.checkbox(f"Scenario {i}", value=i in st.session_state.delete_scenario_indices, key=f"select_{i}", label_visibility="collapsed"):
+                if i not in st.session_state.delete_scenario_indices:
+                    st.session_state.delete_scenario_indices.append(i)
+            else:
+                if i in st.session_state.delete_scenario_indices:
+                    st.session_state.delete_scenario_indices.remove(i)
+        
+        # Submit button
+        st.form_submit_button("Update Selection")
     
     # Export button
     if st.button("Export Scan Scenarios to Excel"):
