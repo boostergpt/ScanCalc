@@ -186,27 +186,29 @@ st.markdown("""
         text-align: center;
         font-family: 'Arial', sans-serif !important;
     }
-    /* Brand column width - dynamically adjust */
+    /* Brand column styling */
     .scenarios-table th:nth-child(1),
     .scenarios-table td:nth-child(1) {
         min-width: 150px;
-        max-width: max-content;
         text-align: left;
-        white-space: normal;
-        overflow: visible;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-    /* Size column width - dynamically adjust */
+    /* Size column styling */
     .scenarios-table th:nth-child(2),
     .scenarios-table td:nth-child(2) {
         min-width: 70px;
-        max-width: max-content;
         white-space: nowrap;
-        overflow: visible;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-    /* Grid lines */
-    .scenarios-table th, .scenarios-table td {
-        border: 1px solid #bdd7ee; /* Stronger grid lines */
+    /* Strong grid lines for Excel look */
+    .scenarios-table th, 
+    .scenarios-table td {
+        border: 1px solid #bdd7ee;
     }
+    /* Clear alternating row colors */
     .scenarios-table tr:nth-child(odd) {
         background-color: #ffffff; /* White rows */
     }
@@ -215,12 +217,6 @@ st.markdown("""
     }
     .scenarios-table tr:hover {
         background-color: #c5e0b4; /* Excel-like selection color */
-    }
-    .checkbox-col {
-        width: 50px;
-        min-width: 50px;
-        text-align: center;
-        background-color: #f7f7f7; /* Slight gray for checkbox column */
     }
 </style>
 """, unsafe_allow_html=True)
@@ -419,8 +415,8 @@ else:
                           'Ad/Feature Price (Base Scan)', 'Ad GM % (Base Scan)', 'Ad GM $ (Base Scan)',
                           'Ad/Feature Price (Deep Scan)', 'Ad GM % (Deep Scan)', 'Ad GM $ (Deep Scan)'])
     
-    # Create a simple Excel-like table
-    table_html = "<div style='overflow-x: auto;'><table class='scenarios-table'><thead><tr>"
+    # Create a simple Excel-like table with stronger gridlines and alternating colors
+    table_html = "<div style='overflow-x: auto;'><table class='scenarios-table' cellspacing='0' cellpadding='0'><thead><tr>"
     
     # Add column headers
     for col in display_columns:
