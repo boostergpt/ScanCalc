@@ -10,7 +10,8 @@ import os
 st.set_page_config(
     page_title="Margin Calculator",
     page_icon="🧮",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # Custom CSS for better styling and larger fonts
@@ -40,7 +41,7 @@ st.markdown("""
     .header {
         text-align: center;
         margin-bottom: 30px;
-        font-size: 2.2rem;
+        font-size: 2.8rem;
     }
     .logo-container {
         text-align: center;
@@ -66,11 +67,11 @@ st.markdown("""
         text-align: center;
     }
     .stTextInput input, .stNumberInput input, .stSelectbox > div > div[role="listbox"] {
-        font-size: 1.2rem !important;
+        font-size: 1.4rem !important;
     }
     .stTextInput label, .stNumberInput label, .stSelectbox label {
-        font-size: 1.2rem !important;
-        font-weight: 500 !important;
+        font-size: 1.5rem !important;
+        font-weight: 600 !important;
     }
     .stTab [data-baseweb="tab"] {
         font-size: 1.2rem !important;
@@ -133,7 +134,42 @@ st.markdown("""
     .everyday-row {
         background-color: #d4edda !important;
     }
+    .editable-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 1.2rem;
+    }
+    .editable-table th {
+        background-color: #f0f2f6;
+        padding: 10px;
+        text-align: center;
+        font-weight: bold;
+        border: 1px solid #ddd;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .editable-table td {
+        padding: 8px;
+        border: 1px solid #ddd;
+        text-align: center;
+    }
+    .editable-table tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+    .editable-table tr:hover {
+        background-color: #e9ecef;
+    }
+    html {
+        zoom: 67%;
+    }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.style.zoom = "67%";
+    });
+</script>
 """, unsafe_allow_html=True)
 
 # Initialize session state for storing scan scenarios
@@ -143,6 +179,10 @@ if 'scan_scenarios' not in st.session_state:
 # For managing scenario deletion
 if 'delete_scenario_indices' not in st.session_state:
     st.session_state.delete_scenario_indices = []
+
+# For tracking edited values
+if 'edited_cells' not in st.session_state:
+    st.session_state.edited_cells = {}
 
 # Add logo and title to the main area
 try:
@@ -308,6 +348,67 @@ if st.button("Save Scan Scenario"):
     
     st.success("Scan scenario saved successfully!")
 
+# Helper function to recalculate margins in the scenarios table
+def recalculate_margins(df, row_idx):
+    # Get relevant values
+    bottle_cost = df.at[row_idx, 'Bottle Cost']
+    base_scan = df.at[row_idx, 'Base Scan']
+    deep_scan = df.at[row_idx, 'Deep Scan']
+    coupon = df.at[row_idx, 'Coupon']
+    
+    # Everyday price
+    edlp_price = df.at[row_idx, 'Everyday Shelf Price']
+    edlp_margins = calculate_margin(edlp_price, bottle_cost, 0, coupon)
+    df.at[row_idx, 'Everyday GM %'] = edlp_margins["gm_percent"]
+    df.at[row_idx, 'Everyday GM $'] = edlp_margins["gm_dollars"]
+    df.at[row_idx, 'Everyday GM % (With Coupon)'] = edlp_margins["gm_coupon_percent"]
+    
+    # TPR Base
+    tpr_base_price = df.at[row_idx, 'TPR Price (Base Scan)']
+    tpr_base_margins = calculate_margin(tpr_base_price, bottle_cost, base_scan, coupon)
+    df.at[row_idx, 'TPR GM % (Base Scan)'] = tpr_base_margins["gm_percent"]
+    df.at[row_idx, 'TPR GM $ (Base Scan)'] = tpr_base_margins["gm_dollars"]
+    df.at[row_idx, 'TPR GM % (With Coupon)'] = tpr_base_margins["gm_coupon_percent"]
+    
+    # TPR Deep
+    tpr_deep_price = df.at[row_idx, 'TPR Price (Deep Scan)']
+    tpr_deep_margins = calculate_margin(tpr_deep_price, bottle_cost, deep_scan, coupon)
+    df.at[row_idx, 'TPR GM % (Deep Scan)'] = tpr_deep_margins["gm_percent"]
+    df.at[row_idx, 'TPR GM $ (Deep Scan)'] = tpr_deep_margins["gm_dollars"]
+    df.at[row_idx, 'TPR GM % (With Coupon)'] = tpr_deep_margins["gm_coupon_percent"]
+    
+    # Ad Base
+    ad_base_price = df.at[row_idx, 'Ad/Feature Price (Base Scan)']
+    ad_base_margins = calculate_margin(ad_base_price, bottle_cost, base_scan, coupon)
+    df.at[row_idx, 'Ad GM % (Base Scan)'] = ad_base_margins["gm_percent"]
+    df.at[row_idx, 'Ad GM $ (Base Scan)'] = ad_base_margins["gm_dollars"]
+    df.at[row_idx, 'Ad GM % (With Coupon)'] = ad_base_margins["gm_coupon_percent"]
+    
+    # Ad Deep
+    ad_deep_price = df.at[row_idx, 'Ad/Feature Price (Deep Scan)']
+    ad_deep_margins = calculate_margin(ad_deep_price, bottle_cost, deep_scan, coupon)
+    df.at[row_idx, 'Ad GM % (Deep Scan)'] = ad_deep_margins["gm_percent"]
+    df.at[row_idx, 'Ad GM $ (Deep Scan)'] = ad_deep_margins["gm_dollars"]
+    df.at[row_idx, 'Ad GM % (With Coupon)'] = ad_deep_margins["gm_coupon_percent"]
+    
+    # Calculate bottle cost if case cost or bottles per case changes
+    if 'Case Cost' in st.session_state.edited_cells.get(row_idx, {}) or '# Bottles/Cs' in st.session_state.edited_cells.get(row_idx, {}):
+        case_cost = df.at[row_idx, 'Case Cost']
+        bottles_per_case = df.at[row_idx, '# Bottles/Cs']
+        if bottles_per_case > 0:
+            df.at[row_idx, 'Bottle Cost'] = case_cost / bottles_per_case
+    
+    return df
+
+# List of columns that trigger recalculation
+calculated_columns = [
+    'Everyday GM %', 'Everyday GM $', 'Everyday GM % (With Coupon)',
+    'TPR GM % (Base Scan)', 'TPR GM $ (Base Scan)', 'TPR GM % (With Coupon)',
+    'TPR GM % (Deep Scan)', 'TPR GM $ (Deep Scan)', 'TPR GM % (With Coupon)',
+    'Ad GM % (Base Scan)', 'Ad GM $ (Base Scan)', 'Ad GM % (With Coupon)',
+    'Ad GM % (Deep Scan)', 'Ad GM $ (Deep Scan)', 'Ad GM % (With Coupon)'
+]
+
 # Display Saved Scan Scenarios section
 st.markdown("<h2 style='margin-top: 30px;'>Saved Scan Scenarios</h2>", unsafe_allow_html=True)
 
@@ -321,53 +422,247 @@ else:
         st.success("Selected scenarios deleted successfully!")
         st.experimental_rerun()
     
-    # Create a single table with checkboxes for deletion
-    # Use a form to better handle multiple selections
-    with st.form(key='scenarios_form'):
-        # Handle column name compatibility between "Market" and "Customer/State"
-        if 'Customer/State' not in st.session_state.scan_scenarios.columns and 'Market' in st.session_state.scan_scenarios.columns:
-            st.session_state.scan_scenarios = st.session_state.scan_scenarios.rename(columns={'Market': 'Customer/State'})
+    # Handle column name compatibility between "Market" and "Customer/State"
+    if 'Customer/State' not in st.session_state.scan_scenarios.columns and 'Market' in st.session_state.scan_scenarios.columns:
+        st.session_state.scan_scenarios = st.session_state.scan_scenarios.rename(columns={'Market': 'Customer/State'})
+    
+    # Create editable dataframe
+    with st.container():
+        st.write("Click on any cell to edit (except calculated values)")
         
-        # Create display dataframe with selected columns (with fallback columns if needed)
-        display_columns = ['Brand', 'Size', 'Case Cost']
-        # Add Customer/State if it exists, otherwise skip it
-        if 'Customer/State' in st.session_state.scan_scenarios.columns:
-            display_columns.append('Customer/State')
-        # Add the pricing columns
-        display_columns.extend(['Everyday Shelf Price', 'TPR Price (Base Scan)', 
-                              'TPR Price (Deep Scan)', 'Ad/Feature Price (Base Scan)', 
-                              'Ad/Feature Price (Deep Scan)'])
-                              
-        display_df = st.session_state.scan_scenarios[display_columns]
+        # Identify non-calculated columns that can be edited
+        all_columns = st.session_state.scan_scenarios.columns.tolist()
+        editable_columns = [col for col in all_columns if col not in calculated_columns]
         
-        # Add checkboxes for deletion
-        for i in range(len(display_df)):
-            col1, col2 = st.columns([0.1, 0.9])
-            with col1:
-                if st.checkbox(f"Select", key=f"select_{i}"):
-                    if i not in st.session_state.delete_scenario_indices:
-                        st.session_state.delete_scenario_indices.append(i)
-                else:
-                    if i in st.session_state.delete_scenario_indices:
-                        st.session_state.delete_scenario_indices.remove(i)
+        # Create a copy of the dataframe to display and edit
+        edit_df = st.session_state.scan_scenarios.copy()
+        
+        # Display checkboxes for deletion with unique keys
+        checkboxes = []
+        for i in range(len(edit_df)):
+            cb = st.checkbox(f"Select #{i+1}", key=f"select_scenario_{i}")
+            checkboxes.append(cb)
+            if cb and i not in st.session_state.delete_scenario_indices:
+                st.session_state.delete_scenario_indices.append(i)
+            elif not cb and i in st.session_state.delete_scenario_indices:
+                st.session_state.delete_scenario_indices.remove(i)
+        
+        # Create tabs for different views of the table
+        tab1, tab2, tab3 = st.tabs(["Basic Info", "Pricing Details", "All Data"])
+        
+        with tab1:
+            # Define columns for basic view
+            basic_cols = ['Brand', 'Size', 'Case Cost', '# Bottles/Cs', 'Bottle Cost', 'Base Scan', 'Deep Scan', 'Coupon', 'Customer/State', 'Everyday Shelf Price']
+            basic_cols = [col for col in basic_cols if col in edit_df.columns]
             
-            with col2:
-                # Display scenario data
-                display_text = f"**Brand:** {display_df.iloc[i]['Brand']} | **Size:** {display_df.iloc[i]['Size']} | "
+            for i, row in edit_df[basic_cols].iterrows():
+                st.markdown(f"**Scenario #{i+1}**")
+                cols = st.columns(len(basic_cols))
+                for j, col_name in enumerate(basic_cols):
+                    with cols[j]:
+                        # Determine if this field should be editable
+                        is_editable = col_name in editable_columns
+                        is_numeric = pd.api.types.is_numeric_dtype(edit_df[col_name].dtype)
+                        
+                        st.write(f"**{col_name}**")
+                        
+                        if is_editable:
+                            if is_numeric:
+                                # Handle numeric inputs
+                                step = 0.01 if "Price" in col_name or "Cost" in col_name or "Scan" in col_name or "Coupon" in col_name else 1
+                                format_str = "%.2f" if step == 0.01 else None
+                                min_val = 0.0 if step == 0.01 else 1
+                                
+                                new_val = st.number_input(
+                                    "",
+                                    value=float(row[col_name]),
+                                    key=f"edit_{i}_{col_name}",
+                                    min_value=float(min_val) if "# Bottles" in col_name else 0.0,
+                                    step=float(step),
+                                    format=format_str
+                                )
+                                
+                                if new_val != edit_df.at[i, col_name]:
+                                    edit_df.at[i, col_name] = new_val
+                                    if i not in st.session_state.edited_cells:
+                                        st.session_state.edited_cells[i] = {}
+                                    st.session_state.edited_cells[i][col_name] = True
+                                    # Recalculate margins if needed
+                                    if col_name in ['Case Cost', '# Bottles/Cs', 'Bottle Cost', 'Base Scan', 'Deep Scan', 'Coupon', 'Everyday Shelf Price', 
+                                                   'TPR Price (Base Scan)', 'TPR Price (Deep Scan)', 'Ad/Feature Price (Base Scan)', 'Ad/Feature Price (Deep Scan)']:
+                                        edit_df = recalculate_margins(edit_df, i)
+                            else:
+                                # Handle text inputs
+                                if col_name == 'Size' and 'Size' in edit_df.columns:
+                                    new_val = st.selectbox(
+                                        "",
+                                        options=size_options,
+                                        index=size_options.index(row[col_name]) if row[col_name] in size_options else 0,
+                                        key=f"edit_{i}_{col_name}"
+                                    )
+                                else:
+                                    new_val = st.text_input("", value=row[col_name], key=f"edit_{i}_{col_name}")
+                                
+                                if new_val != edit_df.at[i, col_name]:
+                                    edit_df.at[i, col_name] = new_val
+                                    if i not in st.session_state.edited_cells:
+                                        st.session_state.edited_cells[i] = {}
+                                    st.session_state.edited_cells[i][col_name] = True
+                        else:
+                            # Show calculated values as text
+                            if is_numeric:
+                                if "GM %" in col_name:
+                                    st.write(f"{row[col_name]:.1f}%")
+                                elif "Cost" in col_name or "Price" in col_name or "Scan" in col_name or "GM $" in col_name or "Coupon" in col_name:
+                                    st.write(f"${row[col_name]:.2f}")
+                                else:
+                                    st.write(f"{row[col_name]}")
+                            else:
+                                st.write(f"{row[col_name]}")
                 
-                # Add Customer/State if it exists
-                if 'Customer/State' in display_df.columns:
-                    display_text += f"**Customer/State:** {display_df.iloc[i]['Customer/State']} | "
-                
-                display_text += (f"**Everyday Price:** ${display_df.iloc[i]['Everyday Shelf Price']:.2f} | "
-                               f"**TPR (Base):** ${display_df.iloc[i]['TPR Price (Base Scan)']:.2f} | "
-                               f"**TPR (Deep):** ${display_df.iloc[i]['TPR Price (Deep Scan)']:.2f}")
-                
-                st.write(display_text)
-            
-            st.markdown("---")
+                st.markdown("---")
         
-        st.form_submit_button("Refresh Selection")
+        with tab2:
+            # Define columns for pricing view
+            pricing_cols = ['Brand', 'Everyday Shelf Price', 'Everyday GM %', 'Everyday GM $',
+                           'TPR Price (Base Scan)', 'TPR GM % (Base Scan)', 'TPR GM $ (Base Scan)',
+                           'TPR Price (Deep Scan)', 'TPR GM % (Deep Scan)', 'TPR GM $ (Deep Scan)',
+                           'Ad/Feature Price (Base Scan)', 'Ad GM % (Base Scan)', 'Ad GM $ (Base Scan)',
+                           'Ad/Feature Price (Deep Scan)', 'Ad GM % (Deep Scan)', 'Ad GM $ (Deep Scan)']
+            pricing_cols = [col for col in pricing_cols if col in edit_df.columns]
+            
+            for i, row in edit_df[pricing_cols].iterrows():
+                st.markdown(f"**Scenario #{i+1}: {row['Brand']}**")
+                
+                # Create three columns for the three types of pricing
+                price_col1, price_col2, price_col3, price_col4 = st.columns(4)
+                
+                with price_col1:
+                    st.markdown("**Everyday Price**")
+                    
+                    # Price
+                    st.write("Price:")
+                    new_val = st.number_input(
+                        "",
+                        value=float(row['Everyday Shelf Price']),
+                        key=f"edit_{i}_everyday_price",
+                        min_value=0.0,
+                        step=0.01,
+                        format="%.2f"
+                    )
+                    if new_val != edit_df.at[i, 'Everyday Shelf Price']:
+                        edit_df.at[i, 'Everyday Shelf Price'] = new_val
+                        if i not in st.session_state.edited_cells:
+                            st.session_state.edited_cells[i] = {}
+                        st.session_state.edited_cells[i]['Everyday Shelf Price'] = True
+                        edit_df = recalculate_margins(edit_df, i)
+                    
+                    # Display calculated values
+                    st.write(f"GM %: {row['Everyday GM %']:.1f}%")
+                    st.write(f"GM $: ${row['Everyday GM $']:.2f}")
+                
+                with price_col2:
+                    st.markdown("**TPR (Base Scan)**")
+                    
+                    # Price
+                    st.write("Price:")
+                    new_val = st.number_input(
+                        "",
+                        value=float(row['TPR Price (Base Scan)']),
+                        key=f"edit_{i}_tpr_base_price",
+                        min_value=0.0,
+                        step=0.01,
+                        format="%.2f"
+                    )
+                    if new_val != edit_df.at[i, 'TPR Price (Base Scan)']:
+                        edit_df.at[i, 'TPR Price (Base Scan)'] = new_val
+                        if i not in st.session_state.edited_cells:
+                            st.session_state.edited_cells[i] = {}
+                        st.session_state.edited_cells[i]['TPR Price (Base Scan)'] = True
+                        edit_df = recalculate_margins(edit_df, i)
+                    
+                    # Display calculated values
+                    st.write(f"GM %: {row['TPR GM % (Base Scan)']:.1f}%")
+                    st.write(f"GM $: ${row['TPR GM $ (Base Scan)']:.2f}")
+                
+                with price_col3:
+                    st.markdown("**TPR (Deep Scan)**")
+                    
+                    # Price
+                    st.write("Price:")
+                    new_val = st.number_input(
+                        "",
+                        value=float(row['TPR Price (Deep Scan)']),
+                        key=f"edit_{i}_tpr_deep_price",
+                        min_value=0.0,
+                        step=0.01,
+                        format="%.2f"
+                    )
+                    if new_val != edit_df.at[i, 'TPR Price (Deep Scan)']:
+                        edit_df.at[i, 'TPR Price (Deep Scan)'] = new_val
+                        if i not in st.session_state.edited_cells:
+                            st.session_state.edited_cells[i] = {}
+                        st.session_state.edited_cells[i]['TPR Price (Deep Scan)'] = True
+                        edit_df = recalculate_margins(edit_df, i)
+                    
+                    # Display calculated values
+                    st.write(f"GM %: {row['TPR GM % (Deep Scan)']:.1f}%")
+                    st.write(f"GM $: ${row['TPR GM $ (Deep Scan)']:.2f}")
+                
+                with price_col4:
+                    st.markdown("**Ad/Feature**")
+                    
+                    # Base Price
+                    st.write("Base Price:")
+                    new_val = st.number_input(
+                        "",
+                        value=float(row['Ad/Feature Price (Base Scan)']),
+                        key=f"edit_{i}_ad_base_price",
+                        min_value=0.0,
+                        step=0.01,
+                        format="%.2f"
+                    )
+                    if new_val != edit_df.at[i, 'Ad/Feature Price (Base Scan)']:
+                        edit_df.at[i, 'Ad/Feature Price (Base Scan)'] = new_val
+                        if i not in st.session_state.edited_cells:
+                            st.session_state.edited_cells[i] = {}
+                        st.session_state.edited_cells[i]['Ad/Feature Price (Base Scan)'] = True
+                        edit_df = recalculate_margins(edit_df, i)
+                    
+                    # Deep Price
+                    st.write("Deep Price:")
+                    new_val = st.number_input(
+                        "",
+                        value=float(row['Ad/Feature Price (Deep Scan)']),
+                        key=f"edit_{i}_ad_deep_price",
+                        min_value=0.0,
+                        step=0.01,
+                        format="%.2f"
+                    )
+                    if new_val != edit_df.at[i, 'Ad/Feature Price (Deep Scan)']:
+                        edit_df.at[i, 'Ad/Feature Price (Deep Scan)'] = new_val
+                        if i not in st.session_state.edited_cells:
+                            st.session_state.edited_cells[i] = {}
+                        st.session_state.edited_cells[i]['Ad/Feature Price (Deep Scan)'] = True
+                        edit_df = recalculate_margins(edit_df, i)
+                
+                st.markdown("---")
+        
+        with tab3:
+            # Show all data in a table format
+            st.dataframe(edit_df.style.format({
+                col: "${:.2f}" if "Price" in col or "Cost" in col or "Scan" in col or "GM $" in col or "Coupon" in col else "{:.1f}%" if "GM %" in col else "{}"
+                for col in edit_df.columns
+            }), height=400)
+        
+        # Update the session state with the edited dataframe
+        st.session_state.scan_scenarios = edit_df.copy()
+        
+        # Add a button to apply all changes
+        if st.button("Apply All Changes"):
+            st.session_state.edited_cells = {}
+            st.success("All changes applied successfully!")
+            st.experimental_rerun()
     
     # Export button
     if st.button("Export Scan Scenarios to Excel"):
@@ -412,5 +707,6 @@ else:
     if st.button("Clear All Scan Scenarios"):
         st.session_state.scan_scenarios = pd.DataFrame()
         st.session_state.delete_scenario_indices = []
+        st.session_state.edited_cells = {}
         st.success("All scan scenarios cleared!")
         st.experimental_rerun()
