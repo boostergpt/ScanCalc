@@ -166,6 +166,7 @@ st.markdown("""
         margin-bottom: 20px;
         font-family: 'Arial', sans-serif !important;
         border: 1px solid #bdd7ee; /* Excel-like border */
+        box-shadow: 0 0 5px rgba(0,0,0,0.1); /* Subtle shadow for depth */
     }
     .scenarios-table th {
         background-color: #4472c4; /* Excel blue header */
@@ -185,6 +186,19 @@ st.markdown("""
         text-align: center;
         font-family: 'Arial', sans-serif !important;
     }
+    /* Brand column width */
+    .scenarios-table th:nth-child(2),
+    .scenarios-table td:nth-child(2) {
+        width: 300px; /* Make Brand column wider */
+        min-width: 300px;
+        max-width: 300px;
+        text-align: left;
+        white-space: normal;
+    }
+    /* Grid lines */
+    .scenarios-table th, .scenarios-table td {
+        border: 1px solid #bdd7ee; /* Stronger grid lines */
+    }
     .scenarios-table tr:nth-child(odd) {
         background-color: #ffffff; /* White rows */
     }
@@ -196,6 +210,7 @@ st.markdown("""
     }
     .checkbox-col {
         width: 50px;
+        min-width: 50px;
         text-align: center;
         background-color: #f7f7f7; /* Slight gray for checkbox column */
     }
@@ -403,7 +418,7 @@ else:
         st.success("Selected scenarios deleted successfully!")
         st.experimental_rerun()
     
-    # Create Excel-like table with checkboxes and alternating row colors
+    # Create Excel-like table with checkboxes and alternating row colors with grid
     table_html = "<div style='overflow-x: auto;'><table class='scenarios-table'><thead><tr>"
     # Add checkbox column header
     table_html += "<th class='checkbox-col'>Select</th>"
@@ -424,7 +439,7 @@ else:
         table_html += f"<td class='checkbox-col'><input type='checkbox' id='{checkbox_id}' {is_checked}></td>"
         
         # Add data columns
-        for col in display_columns:
+        for j, col in enumerate(display_columns):
             value = st.session_state.scan_scenarios.iloc[i][col]
             
             # Format values based on type
@@ -437,8 +452,12 @@ else:
                     formatted_value = f"{value}"
             else:
                 formatted_value = f"{value}"
-                
-            table_html += f"<td>{formatted_value}</td>"
+            
+            # Special cell class if this is the Brand column (index 0 in display_columns)
+            if j == 0 and col == "Brand":
+                table_html += f"<td class='brand-column'>{formatted_value}</td>"
+            else:
+                table_html += f"<td>{formatted_value}</td>"
         
         table_html += "</tr>"
     
