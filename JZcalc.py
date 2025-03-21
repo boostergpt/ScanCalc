@@ -186,14 +186,22 @@ st.markdown("""
         text-align: center;
         font-family: 'Arial', sans-serif !important;
     }
-    /* Brand column width */
-    .scenarios-table th:nth-child(2),
-    .scenarios-table td:nth-child(2) {
-        width: 300px; /* Make Brand column wider */
-        min-width: 300px;
-        max-width: 300px;
+    /* Brand column width - dynamically adjust */
+    .scenarios-table th:nth-child(1),
+    .scenarios-table td:nth-child(1) {
+        min-width: 150px;
+        max-width: max-content;
         text-align: left;
         white-space: normal;
+        overflow: visible;
+    }
+    /* Size column width - dynamically adjust */
+    .scenarios-table th:nth-child(2),
+    .scenarios-table td:nth-child(2) {
+        min-width: 70px;
+        max-width: max-content;
+        white-space: nowrap;
+        overflow: visible;
     }
     /* Grid lines */
     .scenarios-table th, .scenarios-table td {
@@ -439,9 +447,11 @@ else:
             else:
                 formatted_value = f"{value}"
             
-            # Special cell class if this is the Brand column
-            if j == 0:
-                table_html += f"<td class='brand-column'>{formatted_value}</td>"
+            # Add cell with appropriate class based on column
+            if j == 0:  # Brand column
+                table_html += f"<td title='{formatted_value}'>{formatted_value}</td>"
+            elif j == 1:  # Size column
+                table_html += f"<td title='{formatted_value}'>{formatted_value}</td>"
             else:
                 table_html += f"<td>{formatted_value}</td>"
         
