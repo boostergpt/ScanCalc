@@ -422,6 +422,7 @@ else:
         st.success("Selected scenarios deleted successfully!")
         st.experimental_rerun()
     
+<<<<<<< HEAD
     # Handle column name compatibility between "Market" and "Customer/State"
     if 'Customer/State' not in st.session_state.scan_scenarios.columns and 'Market' in st.session_state.scan_scenarios.columns:
         st.session_state.scan_scenarios = st.session_state.scan_scenarios.rename(columns={'Market': 'Customer/State'})
@@ -433,6 +434,16 @@ else:
         # Identify non-calculated columns that can be edited
         all_columns = st.session_state.scan_scenarios.columns.tolist()
         editable_columns = [col for col in all_columns if col not in calculated_columns]
+=======
+    # Create a single table with checkboxes for deletion
+    # Use a form to better handle multiple selections
+    with st.form(key='scenarios_form'):
+        # Create display dataframe with selected columns
+        display_df = st.session_state.scan_scenarios[['Brand', 'Size', 'Case Cost', 'Customer/State', 
+                                                   'Everyday Shelf Price', 'TPR Price (Base Scan)', 
+                                                   'TPR Price (Deep Scan)', 'Ad/Feature Price (Base Scan)', 
+                                                   'Ad/Feature Price (Deep Scan)']]
+>>>>>>> parent of 0147634 (Update JZcalc.py)
         
         # Create a copy of the dataframe to display and edit
         edit_df = st.session_state.scan_scenarios.copy()
@@ -455,6 +466,7 @@ else:
             basic_cols = ['Brand', 'Size', 'Case Cost', '# Bottles/Cs', 'Bottle Cost', 'Base Scan', 'Deep Scan', 'Coupon', 'Customer/State', 'Everyday Shelf Price']
             basic_cols = [col for col in basic_cols if col in edit_df.columns]
             
+<<<<<<< HEAD
             for i, row in edit_df[basic_cols].iterrows():
                 st.markdown(f"**Scenario #{i+1}**")
                 cols = st.columns(len(basic_cols))
@@ -521,6 +533,17 @@ else:
                                 st.write(f"{row[col_name]}")
                 
                 st.markdown("---")
+=======
+            with col2:
+                # Display scenario data
+                st.write(f"**Brand:** {display_df.iloc[i]['Brand']} | **Size:** {display_df.iloc[i]['Size']} | "
+                        f"**Customer/State:** {display_df.iloc[i]['Customer/State']} | "
+                        f"**Everyday Price:** ${display_df.iloc[i]['Everyday Shelf Price']:.2f} | "
+                        f"**TPR (Base):** ${display_df.iloc[i]['TPR Price (Base Scan)']:.2f} | "
+                        f"**TPR (Deep):** ${display_df.iloc[i]['TPR Price (Deep Scan)']:.2f}")
+            
+            st.markdown("---")
+>>>>>>> parent of 0147634 (Update JZcalc.py)
         
         with tab2:
             # Define columns for pricing view
