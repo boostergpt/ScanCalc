@@ -8,7 +8,7 @@ import os
 
 # Set page config
 st.set_page_config(
-    page_title="Margin Calculator MAYBE",
+    page_title="Margin Calculator",
     page_icon="🧮",
     layout="wide"
 )
@@ -405,25 +405,16 @@ else:
     if 'Customer/State' in st.session_state.scan_scenarios.columns:
         display_columns.append('Customer/State')
     # Add the pricing columns
-    display_columns.extend(['Everyday Shelf Price', 'Everyday GM %', 'Everyday GM $', 
+    display_columns.extend(['Everyday Shelf Price', 'Everyday GM %', 'Everyday GM , 
                           'TPR Price (Base Scan)', 'TPR GM % (Base Scan)', 'TPR GM $ (Base Scan)',
                           'TPR Price (Deep Scan)', 'TPR GM % (Deep Scan)', 'TPR GM $ (Deep Scan)',
                           'Ad/Feature Price (Base Scan)', 'Ad GM % (Base Scan)', 'Ad GM $ (Base Scan)',
                           'Ad/Feature Price (Deep Scan)', 'Ad GM % (Deep Scan)', 'Ad GM $ (Deep Scan)'])
     
-    # Process deletion of scenarios if button was clicked
-    if st.button("Delete Selected Scenarios") and st.session_state.delete_scenario_indices:
-        st.session_state.scan_scenarios = st.session_state.scan_scenarios.drop(index=st.session_state.delete_scenario_indices).reset_index(drop=True)
-        st.session_state.delete_scenario_indices = []
-        st.success("Selected scenarios deleted successfully!")
-        st.experimental_rerun()
-    
-    # Create Excel-like table with checkboxes and alternating row colors with grid
+    # Create a simple Excel-like table
     table_html = "<div style='overflow-x: auto;'><table class='scenarios-table'><thead><tr>"
-    # Add checkbox column header
-    table_html += "<th class='checkbox-col'>Select</th>"
     
-    # Add other column headers
+    # Add column headers
     for col in display_columns:
         table_html += f"<th>{col}</th>"
     table_html += "</tr></thead><tbody>"
@@ -432,11 +423,6 @@ else:
     for i in range(len(st.session_state.scan_scenarios)):
         # Row class is handled by CSS for alternating colors
         table_html += "<tr>"
-        
-        # Add checkbox column
-        checkbox_id = f"checkbox_{i}"
-        is_checked = "checked" if i in st.session_state.delete_scenario_indices else ""
-        table_html += f"<td class='checkbox-col'><input type='checkbox' id='{checkbox_id}' {is_checked}></td>"
         
         # Add data columns
         for j, col in enumerate(display_columns):
@@ -453,8 +439,8 @@ else:
             else:
                 formatted_value = f"{value}"
             
-            # Special cell class if this is the Brand column (index 0 in display_columns)
-            if j == 0 and col == "Brand":
+            # Special cell class if this is the Brand column
+            if j == 0:
                 table_html += f"<td class='brand-column'>{formatted_value}</td>"
             else:
                 table_html += f"<td>{formatted_value}</td>"
@@ -463,50 +449,8 @@ else:
     
     table_html += "</tbody></table></div>"
     
-    # JavaScript to handle checkbox selections
-    checkbox_script = """
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="checkbox_"]');
-        checkboxes.forEach(function(checkbox) {
-            checkbox.addEventListener('change', function() {
-                const index = this.id.split('_')[1];
-                if (this.checked) {
-                    // Add to selected indices
-                    window.parent.postMessage({
-                        'type': 'streamlit:setComponentValue',
-                        'value': index
-                    }, '*');
-                } else {
-                    // Remove from selected indices
-                    window.parent.postMessage({
-                        'type': 'streamlit:removeComponentValue',
-                        'value': index
-                    }, '*');
-                }
-            });
-        });
-    });
-    </script>
-    """
-    
     # Display the table
-    st.components.v1.html(table_html + checkbox_script, height=400, scrolling=True)
-    
-    # Create a form to collect checkbox states
-    with st.form("scenario_selection_form"):
-        # Create hidden checkboxes to store state
-        for i in range(len(st.session_state.scan_scenarios)):
-            # These are invisible but maintain state
-            if st.checkbox(f"Scenario {i}", value=i in st.session_state.delete_scenario_indices, key=f"select_{i}", label_visibility="collapsed"):
-                if i not in st.session_state.delete_scenario_indices:
-                    st.session_state.delete_scenario_indices.append(i)
-            else:
-                if i in st.session_state.delete_scenario_indices:
-                    st.session_state.delete_scenario_indices.remove(i)
-        
-        # Submit button
-        st.form_submit_button("Update Selection")
+    st.components.v1.html(table_html, height=400, scrolling=True)
     
     # Export button
     if st.button("Export Scan Scenarios to Excel"):
