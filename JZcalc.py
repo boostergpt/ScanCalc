@@ -158,13 +158,11 @@ st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_
 # Create sidebar for inputs
 with st.sidebar:
     # Brand and Size inputs
-    st.subheader("Brand and Size")
     brand = st.text_input("Brand")
     size_options = ["1.75L", "1L", "750mL", "375mL", "355mL", "200mL", "100mL", "50mL"]
     size = st.selectbox("Size", size_options)
     
     # Cost inputs
-    st.subheader("Cost Details")
     case_cost = st.number_input("Case Cost ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     bottles_per_case = st.number_input("# Bottles per Case", min_value=1, value=12, step=1)
     
@@ -177,13 +175,11 @@ with st.sidebar:
     st.text(f"Bottle Cost: ${bottle_cost:.2f}")
     
     # Scan and coupon inputs
-    st.subheader("Promotions")
     base_scan = st.number_input("Base Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
     deep_scan = st.number_input("Deep Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
     coupon = st.number_input("Coupon ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     
     # Pricing inputs
-    st.subheader("Pricing")
     edlp_price = st.number_input("Everyday Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     tpr_base_price = st.number_input("TPR Base Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
     tpr_deep_price = st.number_input("TPR Deep Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
