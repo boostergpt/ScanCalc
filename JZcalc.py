@@ -328,11 +328,21 @@ else:
     # Create a single table with checkboxes for deletion
     # Use a form to better handle multiple selections
     with st.form(key='scenarios_form'):
-        # Create display dataframe with selected columns
-        display_df = st.session_state.scan_scenarios[['Brand', 'Size', 'Case Cost', 'Customer/State', 
-                                                   'Everyday Shelf Price', 'TPR Price (Base Scan)', 
-                                                   'TPR Price (Deep Scan)', 'Ad/Feature Price (Base Scan)', 
-                                                   'Ad/Feature Price (Deep Scan)']]
+        # Handle column name compatibility between "Market" and "Customer/State"
+        if 'Customer/State' not in st.session_state.scan_scenarios.columns and 'Market' in st.session_state.scan_scenarios.columns:
+            st.session_state.scan_scenarios = st.session_state.scan_scenarios.rename(columns={'Market': 'Customer/State'})
+        
+        # Create display dataframe with selected columns (with fallback columns if needed)
+        display_columns = ['Brand', 'Size', 'Case Cost']
+        # Add Customer/State if it exists, otherwise skip it
+        if 'Customer/State' in st.session_state.scan_scenarios.columns:
+            display_columns.append('Customer/State')
+        # Add the pricing columns
+        display_columns.extend(['Everyday Shelf Price', 'TPR Price (Base Scan)', 
+                              'TPR Price (Deep Scan)', 'Ad/Feature Price (Base Scan)', 
+                              'Ad/Feature Price (Deep Scan)'])
+                              
+        display_df = st.session_state.scan_scenarios[display_columns]
         
         # Add checkboxes for deletion
         for i in range(len(display_df)):
@@ -347,11 +357,17 @@ else:
             
             with col2:
                 # Display scenario data
-                st.write(f"**Brand:** {display_df.iloc[i]['Brand']} | **Size:** {display_df.iloc[i]['Size']} | "
-                        f"**Customer/State:** {display_df.iloc[i]['Customer/State']} | "
-                        f"**Everyday Price:** ${display_df.iloc[i]['Everyday Shelf Price']:.2f} | "
-                        f"**TPR (Base):** ${display_df.iloc[i]['TPR Price (Base Scan)']:.2f} | "
-                        f"**TPR (Deep):** ${display_df.iloc[i]['TPR Price (Deep Scan)']:.2f}")
+                display_text = f"**Brand:** {display_df.iloc[i]['Brand']} | **Size:** {display_df.iloc[i]['Size']} | "
+                
+                # Add Customer/State if it exists
+                if 'Customer/State' in display_df.columns:
+                    display_text += f"**Customer/State:** {display_df.iloc[i]['Customer/State']} | "
+                
+                display_text += (f"**Everyday Price:** ${display_df.iloc[i]['Everyday Shelf Price']:.2f} | "
+                               f"**TPR (Base):** ${display_df.iloc[i]['TPR Price (Base Scan)']:.2f} | "
+                               f"**TPR (Deep):** ${display_df.iloc[i]['TPR Price (Deep Scan)']:.2f}")
+                
+                st.write(display_text)
             
             st.markdown("---")
         
