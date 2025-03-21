@@ -398,4 +398,4 @@ else:
         st.session_state.scan_scenarios = pd.DataFrame()
         st.session_state.delete_scenario_indices = []
         st.success("All scan scenarios cleared!")
-        st.experimental_rerun()
+        st.rerun()
