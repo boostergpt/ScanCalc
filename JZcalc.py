@@ -390,12 +390,6 @@ import os
 import datetime
 import math
 
-# Import lists and configuration from Part 1
-from part1_lists import (
-    brand_list, segment_list, size_options, segment_mapping, 
-    segment_size_combinations, custom_css
-)
-
 # Set page config
 st.set_page_config(
     page_title="Pricing & Margin Calculator",
