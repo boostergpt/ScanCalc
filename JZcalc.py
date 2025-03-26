@@ -114,24 +114,24 @@ custom_css = """
         font-family: 'Arial', sans-serif !important;
     }
     
-    /* Pricing table styling */
+    /* Pricing table styling - MADE SMALLER */
     .pricing-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 1.4rem;
-        margin-bottom: 20px;
+        font-size: 1.1rem; /* Reduced from 1.4rem */
+        margin-bottom: 15px; /* Reduced from 20px */
         font-family: 'Arial', sans-serif !important;
     }
     .pricing-table th {
         background-color: #f0f2f6;
-        padding: 12px;
+        padding: 8px; /* Reduced from 12px */
         text-align: center;
         font-weight: bold;
         border: 1px solid #ddd;
         font-family: 'Arial', sans-serif !important;
     }
     .pricing-table td {
-        padding: 12px;
+        padding: 8px; /* Reduced from 12px */
         border: 1px solid #ddd;
         text-align: center;
         font-family: 'Arial', sans-serif !important;
@@ -149,11 +149,11 @@ custom_css = """
         background-color: #ff6b6b;
         color: white;
         border: none;
-        padding: 8px 12px;
+        padding: 6px 10px; /* Reduced from 8px 12px */
         border-radius: 4px;
         cursor: pointer;
-        font-size: 1.1rem;
-        margin: 5px;
+        font-size: 1rem; /* Reduced from 1.1rem */
+        margin: 4px; /* Reduced from 5px */
         font-family: 'Arial', sans-serif !important;
     }
     .delete-button:hover {
@@ -163,33 +163,33 @@ custom_css = """
         background-color: #d4edda !important;
     }
     
-    /* Make scenarios table match the pricing table styling */
+    /* Make scenarios table match the pricing table styling - MADE SMALLER */
     .scenarios-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 1.4rem;
-        margin-bottom: 20px;
+        font-size: 1.1rem; /* Reduced from 1.4rem */
+        margin-bottom: 15px; /* Reduced from 20px */
         font-family: 'Arial', sans-serif !important;
     }
     
-    /* Index ratio table styling */
+    /* Index ratio table styling - MADE SMALLER */
     .index-ratio-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 1.2rem;
-        margin-bottom: 20px;
+        font-size: 1rem; /* Reduced from 1.2rem */
+        margin-bottom: 15px; /* Reduced from 20px */
         font-family: 'Arial', sans-serif !important;
     }
     .index-ratio-table th {
         background-color: #f0f2f6;
-        padding: 8px;
+        padding: 6px; /* Reduced from 8px */
         text-align: center;
         font-weight: bold;
         border: 1px solid #ddd;
         font-family: 'Arial', sans-serif !important;
     }
     .index-ratio-table td {
-        padding: 8px;
+        padding: 6px; /* Reduced from 8px */
         border: 1px solid #ddd;
         text-align: center;
         font-family: 'Arial', sans-serif !important;
@@ -205,6 +205,20 @@ custom_css = """
     }
     .low-value-cell {
         background-color: #FFB6C1 !important; /* Light pink */
+    }
+    
+    /* Added compact layout for combined view */
+    .compact-section {
+        margin-bottom: 1rem;
+    }
+    .compact-section h2, .compact-section h3 {
+        margin-top: 0.8rem;
+        margin-bottom: 0.5rem;
+        font-size: 1.3rem;
+    }
+    .compact-divider {
+        margin: 0.8rem 0;
+        border-top: 1px solid #eee;
     }
 </style>
 """
@@ -349,7 +363,6 @@ def to_excel(df):
     writer.close()
     return output.getvalue()
 
-# Function to export segment size index ratios
 def export_segment_size_index_ratios():
     """Create a dataframe with segment size index ratios for all combinations"""
     # Format date for week labels
@@ -523,44 +536,12 @@ def create_calculator_ui():
         
         st.success("Scan scenario saved successfully!")
 
-    # Display Saved Scan Scenarios section
-    st.markdown("<h2 style='margin-top: 30px;'>Saved Scan Scenarios</h2>", unsafe_allow_html=True)
-
-    if st.session_state.scan_scenarios.empty:
-        st.info("No scan scenarios saved yet. Use the 'Save Scan Scenario' button above to save scenarios.")
-    else:
-        # Handle column name compatibility between "Market" and "Customer/State"
-        if 'Customer/State' not in st.session_state.scan_scenarios.columns and 'Market' in st.session_state.scan_scenarios.columns:
-            st.session_state.scan_scenarios = st.session_state.scan_scenarios.rename(columns={'Market': 'Customer/State'})
-        
-        # Display the scenarios using Streamlit's dataframe
-        st.dataframe(st.session_state.scan_scenarios)
-        
-        # Export button
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("Export Scan Scenarios to Excel"):
-                # Convert dataframe to excel
-                excel_file = to_excel(st.session_state.scan_scenarios)
-                b64 = base64.b64encode(excel_file).decode()
-                href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="saved_scan_scenarios.xlsx">Download Scan Scenarios Excel File</a>'
-                st.markdown(href, unsafe_allow_html=True)
-                st.success("Export complete! Click the link above to download.")
-        
-        with col2:
-            # Clear button
-            if st.button("Clear All Scan Scenarios"):
-                st.session_state.scan_scenarios = pd.DataFrame()
-                st.rerun()
-                
-
 def create_h1_data_analysis_ui():
-    """Create the UI for H1 Data Analysis tab"""
-    st.markdown("<h2>H1 Data Analysis</h2>", unsafe_allow_html=True)
+    """Create the UI for H1 Data Analysis section"""
+    st.markdown("<h3 class='compact-section'>H1 Data Analysis</h3>", unsafe_allow_html=True)
     
-    # Create a two-column layout
-    col1, col2 = st.columns([1, 1])
+    # Create a two-column layout with different widths
+    col1, col2 = st.columns([2, 1])
     
     with col1:
         # User selects segment and size for analysis
@@ -588,7 +569,7 @@ def create_h1_data_analysis_ui():
     # Display the index ratios table if data is available
     if segment != "-- Select Segment --" and size != "-- Select Size --" and index_ratios is not None:
         # Create a weekly table with dates and index ratios
-        st.markdown("<h3>Weekly Index Ratios</h3>", unsafe_allow_html=True)
+        st.markdown("<h4>Weekly Index Ratios</h4>", unsafe_allow_html=True)
         
         # Format date for week labels
         current_year = datetime.datetime.now().year
@@ -621,9 +602,41 @@ def create_h1_data_analysis_ui():
         
         # Display the table
         st.markdown(week_table, unsafe_allow_html=True)
+        
+def create_scenarios_ui():
+    """Create the UI for Saved Scan Scenarios tab"""
+    st.markdown("<h2>Saved Scan Scenarios</h2>", unsafe_allow_html=True)
+
+    if st.session_state.scan_scenarios.empty:
+        st.info("No scan scenarios saved yet. Use the 'Save Scan Scenario' button in the Calculator tab to save scenarios.")
+    else:
+        # Handle column name compatibility between "Market" and "Customer/State"
+        if 'Customer/State' not in st.session_state.scan_scenarios.columns and 'Market' in st.session_state.scan_scenarios.columns:
+            st.session_state.scan_scenarios = st.session_state.scan_scenarios.rename(columns={'Market': 'Customer/State'})
+        
+        # Display the scenarios using Streamlit's dataframe
+        st.dataframe(st.session_state.scan_scenarios)
+        
+        # Export buttons
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("Export Scan Scenarios to Excel"):
+                # Convert dataframe to excel
+                excel_file = to_excel(st.session_state.scan_scenarios)
+                b64 = base64.b64encode(excel_file).decode()
+                href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="saved_scan_scenarios.xlsx">Download Scan Scenarios Excel File</a>'
+                st.markdown(href, unsafe_allow_html=True)
+                st.success("Export complete! Click the link above to download.")
+        
+        with col2:
+            # Clear button
+            if st.button("Clear All Scan Scenarios"):
+                st.session_state.scan_scenarios = pd.DataFrame()
+                st.rerun()
     
     # Add a separator
-    st.markdown("---")
+    st.markdown("<hr class='compact-divider'>", unsafe_allow_html=True)
     
     # Export button for all segment/size combinations
     st.markdown("<h3>Export Segment/Size Index Ratios</h3>", unsafe_allow_html=True)
@@ -701,7 +714,6 @@ def create_h1_data_analysis_ui():
         else:
             st.info("No data available for preview.")
 
-
 def main():
     # Add logo and title to the main area
     try:
@@ -714,17 +726,22 @@ def main():
 
     st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_html=True)
 
-    # Create tabs for Calculator and H1 Data Analysis
-    tab1, tab2 = st.tabs(["Calculator", "H1 Data Analysis"])
+    # Create tabs for Calculator and Scenarios
+    tab1, tab2 = st.tabs(["Calculator and Analysis", "Saved Scenarios"])
 
     with tab1:
         # Main calculator section
         create_calculator_ui()
-
-    with tab2:
-        # H1 Data Analysis section
+        
+        # Add a separator
+        st.markdown("<hr class='compact-divider'>", unsafe_allow_html=True)
+        
+        # H1 Data Analysis section in same tab
         create_h1_data_analysis_ui()
 
+    with tab2:
+        # Saved Scenarios section
+        create_scenarios_ui()
 
 # Execute the app
 if __name__ == "__main__":
