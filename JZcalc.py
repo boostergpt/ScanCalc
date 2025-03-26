@@ -1,195 +1,24 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Mar 26 11:00:16 2025
+import streamlit as st
+import pandas as pd
+import numpy as np
+import base64
+from io import BytesIO
+from PIL import Image
+import os
+import datetime
+import math
 
-@author: angelogayanelo
-"""
+# Import lists from lists.py
+from lists import brand_list, segment_list, size_options, segment_mapping, segment_size_combinations
 
-# Brand List from VBA code
-brand_list = [
-    "-- Select Brand --",
-    "21 Seeds Cucumber Jalapeno",
-    "Astral Tequila Blanco",
-    "Aviation American Gin",
-    "Baileys Chocolate",
-    "Baileys Cinnamon Churros",
-    "Baileys Espresso Crème",
-    "Baileys Original",
-    "Baileys Original Minis",
-    "Baileys Salted Caramel",
-    "Baileys Strawberries & Cream",
-    "Blade & Bow",
-    "Buchanan's Deluxe Aged 12 Years",
-    "Buchanan's Master",
-    "Buchanan's Pineapple",
-    "Buchanan's Special Reserve Aged 18 Years",
-    "Bulleit Bourbon",
-    "Bulleit Bourbon 10YO",
-    "Bulleit Old Fashioned Cocktail (RTS)",
-    "Bulleit Whiskey Sour Cocktail (RTS)",
-    "Bulleit Rye",
-    "Captain Morgan 100 Proof Spiced Rum",
-    "Captain Morgan Caribbean White Rum",
-    "Captain Morgan Original Spiced Rum",
-    "Captain Morgan Private Stock",
-    "Captain Morgan Silver Spiced",
-    "Casamigos Anejo",
-    "Casamigos Blanco",
-    "Casamigos Blanco Jalapeno",
-    "Casamigos Cristalino",
-    "Casamigos Mezcal Joven",
-    "Casamigos Reposado",
-    "Casamigos RTD",
-    "Ciroc Apple",
-    "Ciroc Coconut Vodka",
-    "Ciroc Limonata",
-    "Ciroc Mango",
-    "Ciroc Passion",
-    "Ciroc Peach",
-    "Ciroc Pineapple",
-    "Ciroc Red Berry Vodka",
-    "Ciroc Summer Citrus",
-    "Ciroc Summer Watermelon",
-    "Ciroc Vodka",
-    "Ciroc VS",
-    "CM Long Island Ice Tea",
-    "Crown Royal 18YO",
-    "Crown Royal Black",
-    "Crown Royal Blackberry",
-    "Crown Royal Black Cherry Whiskey Sour",
-    "Crown Royal Canadian Whiskey",
-    "Crown Royal Chocolate",
-    "Crown Royal Peach",
-    "Crown Royal Regal Apple",
-    "Crown Royal Reserve",
-    "Crown Royal Salted Caramel",
-    "Crown Royal Vanilla",
-    "Crown Royal Washington Apple (RTD)",
-    "Crown Royal Whiskey & Cola (RTD)",
-    "Crown Royal Whiskey Lemonade Variety Pack",
-    "Crown Royal XO",
-    "Dalwhinnie 15YO",
-    "Deleon Blanco",
-    "Deleon Reposado",
-    "Dimple Aged 15 Years",
-    "Don Julio 1942",
-    "Don Julio 70 Anejo",
-    "Don Julio Alma Miel",
-    "Don Julio Anejo",
-    "Don Julio Blanco",
-    "Don Julio Primavera",
-    "Don Julio Reposado",
-    "Don Julio Reposado Private Cask",
-    "Don Julio Rosado",
-    "George Dickel Classic Recipe",
-    "George Dickel Signature",
-    "Gordon's Dry Gin",
-    "Gordon's Vodka",
-    "J&B Rare",
-    "JW 18 Years",
-    "JW Black Label",
-    "JW Blue Label",
-    "JW Double Black",
-    "JW Gold Label Reserve",
-    "JW Green Label",
-    "JW Red Label",
-    "JW The Collection",
-    "Ketel One Botanical Cucumber and Mint",
-    "Ketel One Botanical Grapefruit and Rose",
-    "Ketel One Botanical Peach and Orange Blossom",
-    "Ketel One Citroen Vodka",
-    "Ketel One Cosmopolitan Cocktails",
-    "Ketel One Espresso Martini Cocktails",
-    "Ketel One Lemon Drop Cocktails",
-    "Ketel One Vodka",
-    "Lagavulin 16YO",
-    "Mezcal Union El Joven",
-    "Mr Black Cold Brew Coffee Liqueur",
-    "Oban 14YO",
-    "Oban Little Bay",
-    "Old Parr Aged 12 Years",
-    "Rumple Minze Peppermint Schnapps",
-    "Seagram's 7 Crown",
-    "Smirnoff Blue Raspberry Lemonade",
-    "Smirnoff Blueberry",
-    "Smirnoff Cherry",
-    "Smirnoff Citrus",
-    "Smirnoff Electric Guava",
-    "Smirnoff Green Apple",
-    "Smirnoff Kissed Caramel",
-    "Smirnoff No. 21 Red",
-    "Smirnoff No. 57 Blue",
-    "Smirnoff Orange",
-    "Smirnoff Peach",
-    "Smirnoff Peppermint Twist",
-    "Smirnoff Pink Lemonade",
-    "Smirnoff Raspberry",
-    "Smirnoff Red White and Berry",
-    "Smirnoff Sours Berry Lemon",
-    "Smirnoff Spiced Root Beer",
-    "Smirnoff Spicy Tamarind",
-    "Smirnoff Strawberry",
-    "Smirnoff Vanilla",
-    "Smirnoff Watermelon",
-    "Smirnoff Whipped Cream",
-    "Smirnoff Spicy Tamarind",
-    "Smirnoff ZeroSugar InfusStrawberry&Rose",
-    "Tanqueray London Dry Gin",
-    "Tanqueray No. Ten Gin",
-    "Tanqueray Rangpur Lime",
-    "Tanqueray Sterling Vodka",
-    "Zacapa Centenario 23 Years Rum",
-    "Zacapa Centenario XO Rum"
-]
+# Set page config
+st.set_page_config(
+    page_title="Pricing & Margin Calculator",
+    page_icon="🧮",
+    layout="wide"
+)
 
-# Segment list
-segment_list = [
-    "-- Select Segment --",
-    "Cordials",
-    "Gin",
-    "NAW",
-    "Ready-to-Drink",
-    "Ready-to-Serve",
-    "Rum",
-    "Scotch",
-    "Tequila",
-    "Vodka"
-]
-
-# Size options
-size_options = [
-    "-- Select Size --",
-    "1.75L",
-    "1L",
-    "750mL",
-    "375mL",
-    "355mL",
-    "200mL",
-    "100mL",
-    "50mL"
-]
-
-# Mapping for segment display names to data names
-segment_mapping = {
-    "Ready-to-Drink": "RTD",
-    "Ready-to-Serve": "RTS"
-}
-
-# Define segment size combinations for the index ratio export
-segment_size_combinations = {
-    "Cordials": ["1.75L", "1L", "750mL", "375mL"],
-    "Gin": ["1.75L", "1L", "750mL", "375mL"],
-    "NAW": ["1.75L", "1L", "750mL", "375mL"],
-    "RTD": ["355mL"],
-    "RTS": ["1.75L", "750mL", "375mL"],
-    "Rum": ["1.75L", "1L", "750mL", "375mL"],
-    "Scotch": ["1.75L", "1L", "750mL", "375mL"],
-    "Tequila": ["1.75L", "1L", "750mL", "375mL"],
-    "Vodka": ["1.75L", "1L", "750mL", "375mL"]
-}
-
-# Custom CSS for styling (preserving the original styling)
+# Custom CSS for styling
 custom_css = """
 <style>
     /* Global font settings for uniformity */
@@ -380,23 +209,6 @@ custom_css = """
 </style>
 """
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import base64
-from io import BytesIO
-from PIL import Image
-import os
-import datetime
-import math
-
-# Set page config
-st.set_page_config(
-    page_title="Pricing & Margin Calculator",
-    page_icon="🧮",
-    layout="wide"
-)
-
 # Apply custom CSS
 st.markdown(custom_css, unsafe_allow_html=True)
 
@@ -573,30 +385,6 @@ def export_segment_size_index_ratios():
     
     return df
 
-def main():
-    # Add logo and title to the main area
-    try:
-        image = Image.open('image.png')
-        col1, col2, col3 = st.columns([1, 3, 1])
-        with col2:
-            st.image(image, width=600, use_column_width=True)
-    except Exception:
-        st.warning("Logo 'image.png' not found. Please add it to the same directory as the app.")
-
-    st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_html=True)
-
-    # Create tabs for Calculator and H1 Data Analysis
-    tab1, tab2 = st.tabs(["Calculator", "H1 Data Analysis"])
-
-    with tab1:
-        # Main calculator section
-        create_calculator_ui()
-
-    with tab2:
-        # H1 Data Analysis section
-        create_h1_data_analysis_ui()
-
-
 def create_calculator_ui():
     # Create sidebar for inputs
     with st.sidebar:
@@ -765,7 +553,7 @@ def create_calculator_ui():
             if st.button("Clear All Scan Scenarios"):
                 st.session_state.scan_scenarios = pd.DataFrame()
                 st.rerun()
-
+                
 
 def create_h1_data_analysis_ui():
     """Create the UI for H1 Data Analysis tab"""
@@ -913,7 +701,31 @@ def create_h1_data_analysis_ui():
         else:
             st.info("No data available for preview.")
 
+
+def main():
+    # Add logo and title to the main area
+    try:
+        image = Image.open('image.png')
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            st.image(image, width=600, use_column_width=True)
+    except Exception:
+        st.warning("Logo 'image.png' not found. Please add it to the same directory as the app.")
+
+    st.markdown("<h1 class='header'>Pricing & Margin Calculator</h1>", unsafe_allow_html=True)
+
+    # Create tabs for Calculator and H1 Data Analysis
+    tab1, tab2 = st.tabs(["Calculator", "H1 Data Analysis"])
+
+    with tab1:
+        # Main calculator section
+        create_calculator_ui()
+
+    with tab2:
+        # H1 Data Analysis section
+        create_h1_data_analysis_ui()
+
+
 # Execute the app
 if __name__ == "__main__":
     main()
-
