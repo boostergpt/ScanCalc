@@ -220,6 +220,38 @@ custom_css = """
         margin: 0.8rem 0;
         border-top: 1px solid #eee;
     }
+    
+    /* Added compact layout for combined view */
+    .compact-section {
+        margin-bottom: 0.5rem;
+    }
+    .compact-section h2, .compact-section h3, .compact-section h4 {
+        margin-top: 0.5rem;
+        margin-bottom: 0.3rem;
+        font-size: 1.1rem;
+        font-weight: bold;
+    }
+    .compact-divider {
+        margin: 0.8rem 0;
+        border-top: 1px solid #eee;
+    }
+    
+    /* Side panel for H1 Data Analysis */
+    .side-panel {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        border-left: 3px solid #4e73df;
+        height: 100%;
+    }
+    
+    /* Scrollable area */
+    .scrollable-area {
+        max-height: 350px;
+        overflow-y: auto;
+    }
+    
+    
 </style>
 """
 
@@ -536,73 +568,67 @@ def create_calculator_ui():
         
         st.success("Scan scenario saved successfully!")
 
-def create_h1_data_analysis_ui():
+def create_h1_data_analysis_ui(container):
     """Create the UI for H1 Data Analysis section"""
-    st.markdown("<h3 class='compact-section'>H1 Data Analysis</h3>", unsafe_allow_html=True)
+    container.markdown("<h4 class='compact-section'>H1 Data Analysis</h4>", unsafe_allow_html=True)
     
-    # Create a two-column layout with different widths
-    col1, col2 = st.columns([2, 1])
+    # User selects segment and size for analysis
+    segment = container.selectbox("Select Segment", segment_list, index=0, key='h1_segment', label_visibility="collapsed")
     
-    with col1:
-        # User selects segment and size for analysis
-        segment = st.selectbox("Select Segment", segment_list, index=0, key='h1_segment')
+    # Filter size options based on selected segment
+    data_segment = segment_mapping.get(segment, segment)
+    if data_segment in segment_size_combinations:
+        valid_sizes = ["-- Select Size --"] + segment_size_combinations[data_segment]
+    else:
+        valid_sizes = size_options
         
-        # Filter size options based on selected segment
-        data_segment = segment_mapping.get(segment, segment)
-        if data_segment in segment_size_combinations:
-            valid_sizes = ["-- Select Size --"] + segment_size_combinations[data_segment]
+    size = container.selectbox("Select Size", valid_sizes, index=0, key='h1_size', label_visibility="collapsed")
+    
+    # Display the index ratios in a colored list if data is available
+    if segment != "-- Select Segment --" and size != "-- Select Size --":
+        index_ratios, avg_weekly_rsv, threshold = get_index_ratios(segment, size)
+        
+        if avg_weekly_rsv:
+            container.markdown(f"<p style='margin-bottom:5px;'>Average Weekly RSV: <strong>${avg_weekly_rsv/1000000:.2f}M</strong></p>", unsafe_allow_html=True)
+            
+            if index_ratios is not None:
+                # Format date for week labels
+                current_year = datetime.datetime.now().year
+                week_start_date = datetime.datetime(current_year, 6, 30)
+                
+                # Create a colored list to display the data
+                list_html = "<div style='max-height:400px; overflow-y:auto; background-color:#f8f9fa; padding:8px; border-radius:5px; font-size:0.9rem;'>"
+                
+                for i, ratio in enumerate(index_ratios):
+                    week_end_date = week_start_date + datetime.timedelta(days=6)
+                    
+                    if i == 0:
+                        week_label = f"1: Jun 30-Jul 6"
+                    else:
+                        week_label = f"{i+1}: {week_start_date.strftime('%b %d')}-{week_end_date.strftime('%b %d')}"
+                    
+                    # Determine color based on ratio value compared to threshold
+                    color = "#333333"  # Default dark gray
+                    bg_color = ""
+                    if avg_weekly_rsv > 0:
+                        if ratio > 1 + threshold:
+                            color = "#228B22"  # Forest green
+                            bg_color = "background-color:#e6f4ea;"
+                        elif ratio < 1 - (0.5 * threshold):
+                            color = "#8B0000"  # Deep red
+                            bg_color = "background-color:#fae9e8;"
+                    
+                    list_html += f"<div style='padding:3px 6px; margin-bottom:2px; {bg_color} border-radius:3px;'><span style='display:inline-block; width:110px; font-size:0.8rem;'>{week_label}</span> <span style='font-weight:bold; color:{color};'>{ratio:.0%}</span></div>"
+                    
+                    week_start_date += datetime.timedelta(days=7)
+                    
+                list_html += "</div>"
+                
+                # Display the list
+                container.markdown(list_html, unsafe_allow_html=True)
         else:
-            valid_sizes = size_options
-            
-        size = st.selectbox("Select Size", valid_sizes, index=0, key='h1_size')
-    
-    with col2:
-        # Display average weekly RSV
-        if segment != "-- Select Segment --" and size != "-- Select Size --":
-            index_ratios, avg_weekly_rsv, threshold = get_index_ratios(segment, size)
-            
-            if avg_weekly_rsv:
-                st.metric("H1 Average Weekly RSV", f"${avg_weekly_rsv/1000000:.2f}M")
-            else:
-                st.info("No data available for the selected segment and size.")
-    
-    # Display the index ratios table if data is available
-    if segment != "-- Select Segment --" and size != "-- Select Size --" and index_ratios is not None:
-        # Create a weekly table with dates and index ratios
-        st.markdown("<h4>Weekly Index Ratios</h4>", unsafe_allow_html=True)
-        
-        # Format date for week labels
-        current_year = datetime.datetime.now().year
-        week_start_date = datetime.datetime(current_year, 6, 30)
-        
-        # Create a table to display the data
-        week_table = "<table class='index-ratio-table'><thead><tr><th>F'25 Week</th><th>Index Ratio</th></tr></thead><tbody>"
-        
-        for i, ratio in enumerate(index_ratios):
-            week_end_date = week_start_date + datetime.timedelta(days=6)
-            
-            if i == 0:
-                week_label = f"1: Jun 30-Jul 6"
-            else:
-                week_label = f"{i+1}: {week_start_date.strftime('%b %d')}-{week_end_date.strftime('%b %d')}"
-            
-            # Determine cell class based on ratio value compared to threshold
-            cell_class = ""
-            if avg_weekly_rsv > 0:
-                if ratio > 1 + threshold:
-                    cell_class = "class='above-average'"
-                elif ratio < 1 - (0.5 * threshold):
-                    cell_class = "class='below-average'"
-            
-            week_table += f"<tr><td>{week_label}</td><td {cell_class}>{ratio:.0%}</td></tr>"
-            
-            week_start_date += datetime.timedelta(days=7)
-            
-        week_table += "</tbody></table>"
-        
-        # Display the table
-        st.markdown(week_table, unsafe_allow_html=True)
-        
+            container.info("No data available for this selection.")
+
 def create_scenarios_ui():
     """Create the UI for Saved Scan Scenarios tab"""
     st.markdown("<h2>Saved Scan Scenarios</h2>", unsafe_allow_html=True)
@@ -730,14 +756,20 @@ def main():
     tab1, tab2 = st.tabs(["Calculator and Analysis", "Saved Scenarios"])
 
     with tab1:
-        # Main calculator section
-        create_calculator_ui()
+        # Create two columns for calculator and H1 data
+        calc_col, h1_col = st.columns([3, 1])
         
-        # Add a separator
-        st.markdown("<hr class='compact-divider'>", unsafe_allow_html=True)
+        with calc_col:
+            # Main calculator section
+            create_calculator_ui()
         
-        # H1 Data Analysis section in same tab
-        create_h1_data_analysis_ui()
+        with h1_col:
+            # Create a container with styling for the H1 Data Analysis
+            with st.container():
+                st.markdown("<div class='side-panel'>", unsafe_allow_html=True)
+                # H1 Data Analysis section to the right
+                create_h1_data_analysis_ui(st)
+                st.markdown("</div>", unsafe_allow_html=True)
 
     with tab2:
         # Saved Scenarios section
