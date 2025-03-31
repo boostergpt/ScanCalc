@@ -490,33 +490,27 @@ def create_calculator_ui():
     # Create sidebar for inputs
     with st.sidebar:
         # Create two columns for brand/segment/size inputs
-        col1, col2 = st.columns(2)
+        cols = st.sidebar.columns(2)
         
-        with col1:
-            # Brand input
-            brand = st.selectbox("Brand", brand_list, index=0)
-            # Segment input
-            segment = st.selectbox("Segment", segment_list, index=0)
+        # Left column
+        brand = cols[0].selectbox("Brand", brand_list, index=0)
+        segment = cols[0].selectbox("Segment", segment_list, index=0)
         
-        with col2:
-            # Size input
-            size = st.selectbox("Size", size_options, index=0)
-            # Customer/State input (moved from bottom of sidebar)
-            customer_state = st.text_input("Customer", "")
+        # Right column
+        size = cols[1].selectbox("Size", size_options, index=0)
+        customer_state = cols[1].text_input("Customer", "")
         
         # Add a separator
         st.markdown("---")
         
         # Cost inputs (full width for visibility)
-        col1, col2 = st.columns(2)
+        cols = st.sidebar.columns(2)
         
-        with col1:
-            case_cost_input = st.number_input("Case Cost ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-            case_cost = format_numeric_input(case_cost_input, 2)
+        case_cost_input = cols[0].number_input("Case Cost ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        case_cost = format_numeric_input(case_cost_input, 2)
         
-        with col2:
-            bottles_per_case_input = st.number_input("Bottles/Case", min_value=1, value=12, step=1)
-            bottles_per_case = int(format_numeric_input(bottles_per_case_input, 0))
+        bottles_per_case_input = cols[1].number_input("Bottles/Case", min_value=1, value=12, step=1)
+        bottles_per_case = int(format_numeric_input(bottles_per_case_input, 0))
         
         # Calculate bottle cost automatically
         if bottles_per_case > 0:
@@ -527,17 +521,15 @@ def create_calculator_ui():
         st.text(f"Bottle Cost: ${bottle_cost:.2f}")
         
         # Scan and coupon inputs in columns
-        col1, col2 = st.columns(2)
+        cols = st.sidebar.columns(2)
         
-        with col1:
-            base_scan_input = st.number_input("Base Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
-            base_scan = format_numeric_input(base_scan_input, 2)
+        base_scan_input = cols[0].number_input("Base Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
+        base_scan = format_numeric_input(base_scan_input, 2)
         
-        with col2:
-            deep_scan_input = st.number_input("Deep Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
-            deep_scan = format_numeric_input(deep_scan_input, 2)
+        deep_scan_input = cols[1].number_input("Deep Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
+        deep_scan = format_numeric_input(deep_scan_input, 2)
         
-        # Coupon input
+        # Coupon input (full width)
         coupon_input = st.number_input("Coupon ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
         coupon = format_numeric_input(coupon_input, 2)
         
@@ -545,41 +537,41 @@ def create_calculator_ui():
         st.markdown("---")
         
         # Pricing inputs
-        col1, col2 = st.columns(2)
+        cols = st.sidebar.columns(2)
         
-        with col1:
-            edlp_price_input = st.number_input("EDLP ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-            edlp_price = format_numeric_input(edlp_price_input, 2)
-            
-            tpr_base_price_input = st.number_input("TPR Base ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-            tpr_base_price = format_numeric_input(tpr_base_price_input, 2)
-            
-            ad_base_price_input = st.number_input("Ad Base ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-            ad_base_price = format_numeric_input(ad_base_price_input, 2)
+        edlp_price_input = cols[0].number_input("EDLP ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        edlp_price = format_numeric_input(edlp_price_input, 2)
         
-        with col2:
-            # Empty space to align with EDLP
-            st.text("")
-            
-            tpr_deep_price_input = st.number_input("TPR Deep ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-            tpr_deep_price = format_numeric_input(tpr_deep_price_input, 2)
-            
-            ad_deep_price_input = st.number_input("Ad Deep ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-            ad_deep_price = format_numeric_input(ad_deep_price_input, 2)
+        # Empty space in right column to align
+        cols[1].text("")
+        
+        cols = st.sidebar.columns(2)
+        
+        tpr_base_price_input = cols[0].number_input("TPR Base ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        tpr_base_price = format_numeric_input(tpr_base_price_input, 2)
+        
+        tpr_deep_price_input = cols[1].number_input("TPR Deep ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        tpr_deep_price = format_numeric_input(tpr_deep_price_input, 2)
+        
+        cols = st.sidebar.columns(2)
+        
+        ad_base_price_input = cols[0].number_input("Ad Base ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        ad_base_price = format_numeric_input(ad_base_price_input, 2)
+        
+        ad_deep_price_input = cols[1].number_input("Ad Deep ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        ad_deep_price = format_numeric_input(ad_deep_price_input, 2)
         
         # Add a separator before ad percentages
         st.markdown("---")
         st.markdown("### Ad Percentages")
         
-        col1, col2 = st.columns(2)
+        cols = st.sidebar.columns(2)
         
-        with col1:
-            ad_percentage_base_input = st.number_input("% on Ad (Base)", min_value=0, max_value=100, value=0, step=1)
-            ad_percentage_base = format_numeric_input(ad_percentage_base_input, 0)
+        ad_percentage_base_input = cols[0].number_input("% on Ad (Base)", min_value=0, max_value=100, value=0, step=1)
+        ad_percentage_base = format_numeric_input(ad_percentage_base_input, 0)
         
-        with col2:
-            ad_percentage_deep_input = st.number_input("% on Ad (Deep)", min_value=0, max_value=100, value=0, step=1)
-            ad_percentage_deep = format_numeric_input(ad_percentage_deep_input, 0)
+        ad_percentage_deep_input = cols[1].number_input("% on Ad (Deep)", min_value=0, max_value=100, value=0, step=1)
+        ad_percentage_deep = format_numeric_input(ad_percentage_deep_input, 0)
 
     # Calculate margins for Everyday Price
     edlp_margins = calculate_margin(edlp_price, bottle_cost, 0, coupon)
