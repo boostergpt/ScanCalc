@@ -7,6 +7,7 @@ from PIL import Image
 import os
 import datetime
 import math
+import re
 
 # Import lists from lists.py
 from lists import brand_list, segment_list, size_options, segment_mapping, segment_size_combinations
@@ -267,6 +268,21 @@ if 'h1_data' not in st.session_state:
     # In real use, this would be loaded from a file or database
     st.session_state.h1_data = pd.DataFrame()
 
+# Enhanced input validation function
+def format_numeric_input(value, decimal_places=2):
+    """Format numeric input to specified decimal places"""
+    if value is None or value == "":
+        return 0.0
+    
+    try:
+        # Convert to float and round
+        numeric_value = float(value)
+        formatted_value = round(numeric_value, decimal_places)
+        return formatted_value
+    except ValueError:
+        # If conversion fails, return 0.0
+        return 0.0
+
 # Helper function to calculate margins (similar to BuildMarginString in VBA)
 def calculate_margin(price, cost, scan, coupon):
     if price > 0 and cost > 0:
@@ -289,6 +305,26 @@ def calculate_margin(price, cost, scan, coupon):
             "gm_coupon_percent": 0,
             "gm_coupon_dollars": 0
         }
+
+# New function to calculate weighted averages (similar to CalculateWeightedAverage in VBA)
+def calculate_weighted_average(tpr_price, ad_price, bottle_cost, scan, coupon, ad_percentage):
+    """Calculate weighted average margins based on ad percentage"""
+    if ad_percentage is None or ad_percentage == "":
+        return None, None
+    
+    # Calculate TPR and Ad margins
+    tpr_margins = calculate_margin(tpr_price, bottle_cost, scan, coupon)
+    ad_margins = calculate_margin(ad_price, bottle_cost, scan, coupon)
+    
+    # Convert ad_percentage to decimal
+    ad_percentage_decimal = ad_percentage / 100
+    tpr_percentage = 1 - ad_percentage_decimal
+    
+    # Calculate weighted averages
+    weighted_gm_percent = (tpr_margins["gm_percent"] * tpr_percentage) + (ad_margins["gm_percent"] * ad_percentage_decimal)
+    weighted_gm_dollars = (tpr_margins["gm_dollars"] * tpr_percentage) + (ad_margins["gm_dollars"] * ad_percentage_decimal)
+    
+    return weighted_gm_percent, weighted_gm_dollars
 
 # Function to generate H1 data if not available
 def generate_sample_h1_data():
@@ -318,7 +354,7 @@ def generate_sample_h1_data():
             data.append(row)
     
     # Create column names
-    columns = ["Segment", "Size"] + [f"Week{i}" for i in range(1, 28)]
+    columns = ["Segment", "Size"] + [f"Week {i}" for i in range(1, 28)]
     
     # Create DataFrame
     df = pd.DataFrame(data, columns=columns)
@@ -340,12 +376,16 @@ def get_index_ratios(segment, size):
     if h1_data.empty:
         return None, None, None
         
+    # Make case-insensitive comparison
     matching_row = h1_data[(h1_data['Segment'].str.upper() == data_segment.upper()) & 
                            (h1_data['Size'].str.upper() == size.upper())]
     
     if matching_row.empty:
         return None, None, None
         
+    # Get week columns (all columns except the first two)
+    week_cols = h1_data.columns[2:]
+    
     # Extract weekly data
     weekly_data = matching_row.iloc[0, 2:].values.astype(float)
     
@@ -382,7 +422,7 @@ def to_excel(df):
     for i, col in enumerate(df.columns):
         if "Price" in col or "Cost" in col or "Scan" in col or "Coupon" in col or "GM $" in col:
             worksheet.set_column(i, i, 12, format_currency)
-        elif "GM %" in col:
+        elif "GM %" in col or "% on Ad" in col:
             worksheet.set_column(i, i, 12, format_percent)
         else:
             worksheet.set_column(i, i, 15)
@@ -442,8 +482,11 @@ def create_calculator_ui():
         st.markdown("---")
         
         # Cost inputs
-        case_cost = st.number_input("Case Cost ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-        bottles_per_case = st.number_input("# Bottles per Case", min_value=1, value=12, step=1)
+        case_cost_input = st.number_input("Case Cost ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        case_cost = format_numeric_input(case_cost_input, 2)
+        
+        bottles_per_case_input = st.number_input("# Bottles per Case", min_value=1, value=12, step=1)
+        bottles_per_case = int(format_numeric_input(bottles_per_case_input, 0))
         
         # Calculate bottle cost automatically
         if bottles_per_case > 0:
@@ -454,19 +497,45 @@ def create_calculator_ui():
         st.text(f"Bottle Cost: ${bottle_cost:.2f}")
         
         # Scan and coupon inputs
-        base_scan = st.number_input("Base Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
-        deep_scan = st.number_input("Deep Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
-        coupon = st.number_input("Coupon ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        base_scan_input = st.number_input("Base Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
+        base_scan = format_numeric_input(base_scan_input, 2)
+        
+        deep_scan_input = st.number_input("Deep Scan ($)", min_value=0.0, value=0.0, step=0.25, format="%.2f")
+        deep_scan = format_numeric_input(deep_scan_input, 2)
+        
+        coupon_input = st.number_input("Coupon ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        coupon = format_numeric_input(coupon_input, 2)
         
         # Add a separator
         st.markdown("---")
         
         # Pricing inputs
-        edlp_price = st.number_input("Everyday Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-        tpr_base_price = st.number_input("TPR Base Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-        tpr_deep_price = st.number_input("TPR Deep Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-        ad_base_price = st.number_input("Ad/Feature Base Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
-        ad_deep_price = st.number_input("Ad/Feature Deep Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        edlp_price_input = st.number_input("Everyday Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        edlp_price = format_numeric_input(edlp_price_input, 2)
+        
+        tpr_base_price_input = st.number_input("TPR Base Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        tpr_base_price = format_numeric_input(tpr_base_price_input, 2)
+        
+        tpr_deep_price_input = st.number_input("TPR Deep Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        tpr_deep_price = format_numeric_input(tpr_deep_price_input, 2)
+        
+        ad_base_price_input = st.number_input("Ad/Feature Base Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        ad_base_price = format_numeric_input(ad_base_price_input, 2)
+        
+        ad_deep_price_input = st.number_input("Ad/Feature Deep Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+        ad_deep_price = format_numeric_input(ad_deep_price_input, 2)
+        
+        # Add ad percentage inputs
+        st.markdown("---")
+        st.markdown("### Ad Percentage Settings")
+        
+        ad_percentage_base_input = st.number_input("% on Ad (Base Scan)", min_value=0, max_value=100, value=0, step=1, 
+                                           help="Percentage of time the product is on ad with base scan")
+        ad_percentage_base = format_numeric_input(ad_percentage_base_input, 0)
+        
+        ad_percentage_deep_input = st.number_input("% on Ad (Deep Scan)", min_value=0, max_value=100, value=0, step=1,
+                                           help="Percentage of time the product is on ad with deep scan")
+        ad_percentage_deep = format_numeric_input(ad_percentage_deep_input, 0)
         
         # Optional customer/state input
         customer_state = st.text_input("Customer / State", "")
@@ -479,6 +548,13 @@ def create_calculator_ui():
     tpr_deep_margins = calculate_margin(tpr_deep_price, bottle_cost, deep_scan, coupon)
     ad_base_margins = calculate_margin(ad_base_price, bottle_cost, base_scan, coupon)
     ad_deep_margins = calculate_margin(ad_deep_price, bottle_cost, deep_scan, coupon)
+    
+    # Calculate weighted averages
+    weighted_base_percent, weighted_base_dollars = calculate_weighted_average(
+        tpr_base_price, ad_base_price, bottle_cost, base_scan, coupon, ad_percentage_base)
+    
+    weighted_deep_percent, weighted_deep_dollars = calculate_weighted_average(
+        tpr_deep_price, ad_deep_price, bottle_cost, deep_scan, coupon, ad_percentage_deep)
 
     # Create data for the pricing comparison table (including Everyday Price)
     pricing_data = {
@@ -497,6 +573,20 @@ def create_calculator_ui():
                          f"${tpr_deep_margins['gm_coupon_dollars']:.2f}", f"${ad_base_margins['gm_coupon_dollars']:.2f}", 
                          f"${ad_deep_margins['gm_coupon_dollars']:.2f}"]
     }
+    
+    # Add weighted average information if ad percentages are provided
+    if ad_percentage_base > 0 or ad_percentage_deep > 0:
+        pricing_data["% on Ad"] = ["N/A", f"{ad_percentage_base:.0f}%", f"{ad_percentage_deep:.0f}%", "N/A", "N/A"]
+        
+        if weighted_base_percent is not None:
+            pricing_data["Weighted Avg GM %"] = ["N/A", f"{weighted_base_percent:.1f}%", 
+                                               f"{weighted_deep_percent:.1f}%" if weighted_deep_percent is not None else "N/A", 
+                                               "N/A", "N/A"]
+            
+        if weighted_base_dollars is not None:
+            pricing_data["Weighted Avg GM $"] = ["N/A", f"${weighted_base_dollars:.2f}", 
+                                               f"${weighted_deep_dollars:.2f}" if weighted_deep_dollars is not None else "N/A",
+                                               "N/A", "N/A"]
 
     # Create the HTML table
     table_html = "<table class='pricing-table'><thead><tr>"
@@ -554,7 +644,13 @@ def create_calculator_ui():
             "Ad/Feature Price (Deep Scan)": ad_deep_price,
             "Ad GM % (Deep Scan)": ad_deep_margins["gm_percent"],
             "Ad GM $ (Deep Scan)": ad_deep_margins["gm_dollars"],
-            "Ad GM % (With Coupon)": ad_deep_margins["gm_coupon_percent"]
+            "Ad GM % (With Coupon)": ad_deep_margins["gm_coupon_percent"],
+            "% on Ad (Base)": ad_percentage_base,
+            "Weighted Avg GM % (Base)": weighted_base_percent if weighted_base_percent is not None else 0,
+            "Weighted Avg GM $ (Base)": weighted_base_dollars if weighted_base_dollars is not None else 0,
+            "% on Ad (Deep)": ad_percentage_deep,
+            "Weighted Avg GM % (Deep)": weighted_deep_percent if weighted_deep_percent is not None else 0,
+            "Weighted Avg GM $ (Deep)": weighted_deep_dollars if weighted_deep_dollars is not None else 0
         }
         
         # Create a DataFrame with the scenario data
