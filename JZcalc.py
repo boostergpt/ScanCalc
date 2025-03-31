@@ -478,9 +478,6 @@ def create_calculator_ui():
         segment = st.selectbox("Segment", segment_list, index=0)
         size = st.selectbox("Size", size_options, index=0)
         
-        # Add a separator
-        st.markdown("---")
-        
         # Cost inputs
         case_cost_input = st.number_input("Case Cost ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
         case_cost = format_numeric_input(case_cost_input, 2)
@@ -506,9 +503,6 @@ def create_calculator_ui():
         coupon_input = st.number_input("Coupon ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
         coupon = format_numeric_input(coupon_input, 2)
         
-        # Add a separator
-        st.markdown("---")
-        
         # Pricing inputs
         edlp_price_input = st.number_input("Everyday Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
         edlp_price = format_numeric_input(edlp_price_input, 2)
@@ -524,10 +518,6 @@ def create_calculator_ui():
         
         ad_deep_price_input = st.number_input("Ad/Feature Deep Scan Price ($)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
         ad_deep_price = format_numeric_input(ad_deep_price_input, 2)
-        
-        # Add ad percentage inputs
-        st.markdown("---")
-        st.markdown("### Ad Percentage Settings")
         
         ad_percentage_base_input = st.number_input("% on Ad (Base Scan)", min_value=0, max_value=100, value=0, step=1, 
                                            help="Percentage of time the product is on ad with base scan")
