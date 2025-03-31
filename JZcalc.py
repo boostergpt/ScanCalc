@@ -840,7 +840,7 @@ def main():
         image = Image.open('image.png')
         col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
-            st.image(image, width=600, use_column_width=True)
+            st.image(image, width=600, use_container_width=True)
     except Exception:
         st.warning("Logo 'image.png' not found. Please add it to the same directory as the app.")
 
