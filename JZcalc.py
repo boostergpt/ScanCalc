@@ -813,12 +813,10 @@ def create_scenarios_ui():
         worksheet.freeze_panes(1, 1)
         
         # Page setup
-        worksheet.set_page_setup({
-            'orientation': 'landscape',
-            'fit_to_width': 1,
-            'fit_to_height': 1
-        })
-        
+        worksheet.set_landscape()         # Set landscape orientation
+        worksheet.fit_to_pages(1, 0)      # Fit to 1 page wide, as many pages tall as needed
+        worksheet.set_margins(left=0.33, right=0.33, top=0.33, bottom=0.33)  # Set margins
+
         # Close the writer
         writer.close()
         
